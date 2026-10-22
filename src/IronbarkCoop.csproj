@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <GameDir Condition="'$(GameDir)' == ''">D:\Games\Fears to Fathom Ironbark Lookout</GameDir>
+    <LoaderDir Condition="'$(LoaderDir)' == ''">$(MSBuildThisFileDirectory)..\..\..\work\loader\BepInEx\core</LoaderDir>
+    <Managed>$(GameDir)\Fears to Fathom - Ironbark Lookout_Data\Managed</Managed>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="BepInEx"><HintPath>$(LoaderDir)\BepInEx.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="0Harmony"><HintPath>$(LoaderDir)\0Harmony.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="$(Managed)\UnityEngine*.dll"><Private>false</Private></Reference>
+    <Reference Include="Assembly-CSharp"><HintPath>$(Managed)\Assembly-CSharp.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Facepunch.Steamworks.Win64"><HintPath>$(Managed)\Facepunch.Steamworks.Win64.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Unity.Localization"><HintPath>$(Managed)\Unity.Localization.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="DOTween"><HintPath>$(Managed)\DOTween.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Assembly-CSharp-firstpass"><HintPath>$(Managed)\Assembly-CSharp-firstpass.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Newtonsoft.Json"><HintPath>$(Managed)\Newtonsoft.Json.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Unity.TextMeshPro"><HintPath>$(Managed)\Unity.TextMeshPro.dll</HintPath><Private>false</Private></Reference>
+    <!-- The game ships its own Yarn.Unity.OptionView/OptionsListView/View; the package's types are reached through this alias. -->
+    <Reference Include="YarnSpinner.Unity"><HintPath>$(Managed)\YarnSpinner.Unity.dll</HintPath><Private>false</Private><Aliases>YarnUnity</Aliases></Reference>
+    <Reference Include="YarnSpinner"><HintPath>$(Managed)\YarnSpinner.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Unity.Postprocessing.Runtime"><HintPath>$(Managed)\Unity.Postprocessing.Runtime.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Unity.Animation.Rigging"><HintPath>$(Managed)\Unity.Animation.Rigging.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Concentus" Version="2.2.2" />
+    <PackageReference Include="AssetsTools.NET" Version="3.0.5" />
+    <None Include="classdata.tpk" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

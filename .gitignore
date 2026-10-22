@@ -1,0 +1,10 @@
+# Build output
+src/bin/
+src/obj/
+dist/
+
+# Local development material: game screenshots, lab logs, the dev diary, old local packages
+evidence/
+release/
+MODLOG.md
+*.log

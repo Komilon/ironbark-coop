@@ -1,0 +1,21 @@
+Third-party components shipped in this package
+
+BepInEx 5.4.23.5 (x64), including HarmonyX, MonoMod and Mono.Cecil
+  Unmodified official release files. License: LGPL-2.1 (BepInEx), MIT (HarmonyX, MonoMod, Mono.Cecil).
+  Source and license text: https://github.com/BepInEx/BepInEx  (LICENSE in the repository)
+
+Concentus 2.2.2 (managed Opus codec)
+  License: BSD 3-Clause, see Concentus-LICENSE.txt. Source: https://github.com/lostromb/concentus
+
+AssetsTools.NET 3.0.5 (Unity asset reader)
+  License: MIT. Source: https://github.com/nesrak1/AssetsTools.NET
+
+classdata.tpk (Unity class database from UABEA)
+  License: MIT. Source: https://github.com/nesrak1/UABEA (ReleaseFiles/classdata.tpk)
+
+System.Buffers 4.3.0, System.Memory 4.5.3, System.Numerics.Vectors 4.4.0, System.Runtime.CompilerServices.Unsafe 4.5.3
+  Copyright (c) .NET Foundation and Contributors. License: MIT. https://github.com/dotnet/runtime
+
+Not included: any file of Fears to Fathom - Ironbark Lookout or Scratch Creek. The partner avatars (including the
+Scratch Creek survivors, their animations and the talking icon), sounds and everything else the mod shows are read at
+runtime from the player's own installed copies of the games and cached only on that player's computer.
