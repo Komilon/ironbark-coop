@@ -62,7 +62,7 @@ The code carries an address you can be reached at: external (if UPnP worked), el
 - **Rides**: driver and passenger seat, or stand in the cab; the ride's shake is felt inside; wheel, engine, horn and radio are shared.
 - **Tower**: one desk chair, one computer (booted once, windows shared, screen shown on the monitor); radio talks seen by both and answered together (coloured dots show who picked what: Marcus amber, Tessa teal).
 - **Going to sleep, Scratch Creek style**: whoever lies down first waits on their half of the bed; the night ends when both are in bed.
-- **Night 2, Scratch Creek style**: Tessa wakes up for the night; Marcus dreams — he walks a dark, blurred forest with a flashlight and hears Tessa far away, with heavy reverb.
+- **Night 2, Scratch Creek style**: Tessa wakes up for the night; Marcus dreams — he walks a dark, blurred forest with a flashlight and hears Tessa far away, with heavy reverb. In the morning Marcus has his coffee at the rail while Tessa is still in bed and gets up when she likes (Space).
 - **Co-op chores** on calm evenings (nights 4 and 6): the stove goes out, the wind blows the blinds open.
 
 ### Configuration
@@ -176,7 +176,7 @@ The build references the game's own assemblies from your install; none of them a
 - **Голос в 3D:** в полную силу вблизи, дальше плавно затихает и пропадает примерно через 12 м, за стенами глуше. Над говорящим иконка речи из Scratch Creek. Голос и движение идут по UDP и не «заикаются» при потерях в сети.
 - **Сидящих и спящих видно и слышно:** в машине, в кабинке закусочной, за компьютером — голова сидящего там, где его камера. На стул у компьютера садится один (и через клик по монитору тоже): второму скажут «Это место занято».
 - **Спать ложатся вдвоём, как в Scratch Creek:** кто лёг первым, ждёт на своей половине кровати (Пробел — встать), ночь кончается, когда ляжет второй. Каждый спит на своей половине, партнёр лежит в позе сна из Scratch Creek.
-- **Вторая ночь, как в Scratch Creek:** ночью просыпается Тесса (рация в кровати, туалет, снова спать), а Маркус спит и видит сон: идёт с фонариком по тёмному лесу, картинка сначала сильно размыта и проясняется на первых шагах, слышен звук сна, Тессу он слышит издалека, с эхом. Для Тессы Маркус спит рядом. Когда Тесса ложится, оба просыпаются утром; утром с кофе каждый стоит у перил на своём месте.
+- **Вторая ночь, как в Scratch Creek:** ночью просыпается Тесса (рация в кровати, туалет, снова спать), а Маркус спит и видит сон: идёт с фонариком по тёмному лесу, картинка сначала сильно размыта и проясняется на первых шагах, слышен звук сна, Тессу он слышит издалека, с эхом. Для Тессы Маркус спит рядом. Когда Тесса ложится, наступает утро: Маркус стоит у перил с кофе, а Тесса ещё лежит в кровати и встаёт, когда захочет (Пробел).
 - **Места в закусочной закреплены:** Маркус всегда садится на свою сторону стола (куда приносят еду), Тесса — напротив. Если Маркус уже сидит, клик Тессы по любому столу сажает её напротив него.
 - **Еда в закусочной:** каждому свой поднос. Официантка приносит поднос Маркусу, потом возвращается за вторым для Тессы; пока его не принесли, Маркус ждёт. Каждый ест только со своего подноса. С момента заказа до оплаты счёта за столом заказа не встаёт никто из тех, кто за ним сидит (как в одиночной игре).
 - **Сумка одна на двоих** во всех сценах: если её несёт партнёр, вас не остановят словами «надо забрать сумку». Положенная в фургон сумка едет вместе с ним и не мешает ему ехать. Ключ от вышки появляется у обоих.

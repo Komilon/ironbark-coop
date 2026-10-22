@@ -2,6 +2,24 @@
 
 Both players must use the same mod version. / У обоих игроков должна быть одна версия мода.
 
+## 0.6.0 — playtest fixes: the next night, the morning, flashlights, spray / исправления по плейтесту
+
+**English**
+- After the campfire level the tower could open on night 1 for one player (back to the generator, the key, Connor...): the next night was set only in the game of whoever put out the fire. The mod now remembers it and sends it to the partner, so both open the right night (also with two copies on one PC).
+- Night 2: the dreaming Marcus no longer stands up in the tower for a moment when Tessa goes back to sleep; he wakes once the screen is black.
+- Morning after night 2: Marcus has his coffee at the rail (seen standing, not sitting and turned away); Tessa wakes up still in bed and gets up with Space.
+- A thrown flashlight is followed until it lies still (and if it is knocked later), so it lies the same way for both.
+- Bear spray: the cloud now leaves the partner's can in the direction it points.
+- The look picker frees its preview texture and material when closed.
+
+**Русский**
+- После уровня с костром вышка у одного игрока могла открыться на первой ночи (снова генератор, ключ, Коннор…): следующую ночь игра записывала только тому, кто тушил огонь. Мод теперь запоминает её и передаёт партнёру — оба попадают в нужную ночь (и на одном ПК тоже).
+- Вторая ночь: спящий Маркус больше не встаёт на секунду в вышке, когда Тесса ложится обратно, — просыпается, когда экран уже чёрный.
+- Утро после второй ночи: Маркус пьёт кофе у перил (виден стоящим, а не сидящим спиной), Тесса просыпается в кровати и встаёт Пробелом.
+- Брошенный фонарик отслеживается, пока не перестанет катиться (и если его потом задели), — у обоих он лежит одинаково.
+- Спрей: облако идёт из баллончика партнёра туда, куда он направлен.
+- Окно выбора внешности освобождает память при закрытии.
+
 ## 0.5.0 — Scratch Creek optional, look picker / Scratch Creek не обязательна, выбор внешности
 
 Not compatible with 0.4.0 in the same session (update both). / С 0.4.0 в одной игре не работает — обновитесь оба.

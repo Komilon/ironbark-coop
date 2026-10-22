@@ -27,7 +27,7 @@ namespace IronbarkCoop
         readonly HashSet<GameObject> copies = new HashSet<GameObject>();
         Vector3 handScale;
         int torchCounter;
-        string movingTorch; float movingUntil, nextTorchPose;
+        string movingTorch; float movingUntil, movingSince, nextTorchPose;
         static readonly HashSet<int> mirroredMatches = new HashSet<int>();
         internal static bool Mirroring;
         public int TorchesInWorld
@@ -63,7 +63,7 @@ namespace IronbarkCoop
 
         public void SceneLoaded()
         {
-            torches.Clear(); torchIds.Clear(); glides.Clear(); heldTorch = null; movingTorch = null; copies.Clear(); handScale = Vector3.zero;
+            torches.Clear(); torchIds.Clear(); glides.Clear(); restSent.Clear(); heldTorch = null; movingTorch = null; copies.Clear(); handScale = Vector3.zero;
             spraying = false; matchboxOpen = false; pouring = false; mirroredMatches.Clear();
         }
 
@@ -126,7 +126,7 @@ namespace IronbarkCoop
                     torches[id] = dropped;
                     glides.Remove(id);
                     SendTorch("torch-drop", id, dropped, scene);
-                    movingTorch = id; movingUntil = Time.unscaledTime + 4f;
+                    movingTorch = id; movingUntil = Time.unscaledTime + 15f; movingSince = Time.unscaledTime;
                     Plugin.Log("TORCH_DROP " + id + " at=" + dropped.transform.position.ToString("F2"));
                 }
                 if (inHand && torchIds.TryGetValue(inHand, out var takenId))
@@ -142,9 +142,30 @@ namespace IronbarkCoop
             {
                 nextTorchPose = Time.unscaledTime + 0.15f;
                 SendTorch("torch-pose", movingTorch, moving, scene);
-                if (Time.unscaledTime > movingUntil) movingTorch = null;
+                // Until it lies still (it can roll off a table or tip over seconds later), at most 15 s; the last pose sent is where it rests.
+                bool still = Time.unscaledTime - movingSince > 1f && (!moving.TryGetComponent<Rigidbody>(out var rolling) || rolling.isKinematic || rolling.IsSleeping());
+                if (still || Time.unscaledTime > movingUntil) { movingTorch = null; Plugin.Log("TORCH_RESTS at=" + moving.transform.position.ToString("F2")); }
+            }
+            // Our flashlights lying about can still be knocked over or pushed later (walking into the table): the
+            // partner's copy follows any move of more than 2 cm or 5 degrees.
+            if (Time.unscaledTime >= nextRestCheck)
+            {
+                nextRestCheck = Time.unscaledTime + 0.3f;
+                string mine = plugin.IsHost ? "h" : "c";
+                foreach (var pair in torches)
+                {
+                    var torch = pair.Value;
+                    if (!torch || !pair.Key.StartsWith(mine) || pair.Key == movingTorch || torch == heldTorch || !torch.activeInHierarchy) continue;
+                    var t = torch.transform;
+                    if (restSent.TryGetValue(pair.Key, out var sent) && (sent.Position - t.position).sqrMagnitude < 0.0004f && Quaternion.Angle(sent.Rotation, t.rotation) < 5f) continue;
+                    restSent[pair.Key] = new Glide { Position = t.position, Rotation = t.rotation };
+                    SendTorch("torch-pose", pair.Key, torch, scene);
+                }
             }
         }
+
+        float nextRestCheck;
+        readonly Dictionary<string, Glide> restSent = new Dictionary<string, Glide>();
 
         void SendTorch(string code, string id, GameObject torch, string scene) =>
             plugin.Send(new Packet { kind = "fx", code = code, name = id, scene = scene, position = torch.transform.position, rotation = torch.transform.rotation });
@@ -257,7 +278,9 @@ namespace IronbarkCoop
             foreach (var ps in visual.GetComponentsInChildren<ParticleSystem>(true))
             {
                 if (ps.transform.parent && ps.transform.parent.GetComponentInParent<ParticleSystem>()) continue;
-                ps.transform.position = nozzle;
+                // The cone shoots along the system's forward: point it where the partner aims (in first person the
+                // game keeps it facing the camera's way, which on the partner's can pointed it off to the side).
+                ps.transform.SetPositionAndRotation(nozzle, Quaternion.LookRotation(forward));
             }
         }
 

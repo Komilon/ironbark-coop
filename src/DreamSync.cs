@@ -92,6 +92,18 @@ namespace IronbarkCoop
         // Out of the dream. When the night ends (Tessa lies down), he is up in the tower as the game expects a player
         // who has just gone to bed to be, and the morning sets him up from there. When the partner left, he is back in
         // bed to play the night himself.
+        internal void WakeInTheDark()
+        {
+            if (!Dreaming) { End(); return; }
+            plugin.StartCoroutine(WakeAfterFade());
+        }
+
+        System.Collections.IEnumerator WakeAfterFade()
+        {
+            yield return new WaitForSecondsRealtime(1.15f);
+            End();
+        }
+
         internal void End(bool backToBed = false)
         {
             if (pending) pending = false;
@@ -298,10 +310,11 @@ namespace IronbarkCoop
         static IEnumerator Empty() { yield break; }
     }
 
-    // Going to sleep (Tessa, after the night's errands) wakes the dreamer first, into the bed the morning starts from.
+    // Going to sleep (Tessa, after the night's errands) wakes the dreamer, once the night's fade has gone black (the
+    // fade takes a second; ending the dream at its start showed the tower before the screen was dark).
     [HarmonyPatch(typeof(UIManager), nameof(UIManager.FadeToSleep))]
     internal static class DreamWakePatch
     {
-        static void Prefix() => DreamSync.Instance?.End();
+        static void Prefix() => DreamSync.Instance?.WakeInTheDark();
     }
 }

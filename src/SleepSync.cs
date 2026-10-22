@@ -28,7 +28,7 @@ namespace IronbarkCoop
 
         public string Debug => Waiting ? "waiting" + nextNight : "-";
 
-        public void SceneLoaded() { Waiting = false; proceeding = false; moving = false; bothInBedSince = -1f; }
+        public void SceneLoaded() { Waiting = false; proceeding = false; moving = false; bothInBedSince = -1f; MorningInBed = false; }
 
         // The game is about to end the night here (FadeToSleep). True: lie down and wait for the partner instead.
         internal bool WaitForPartner(int night)
@@ -70,6 +70,12 @@ namespace IronbarkCoop
 
         public void Tick()
         {
+            MorningTick();
+            WaitTick();
+        }
+
+        void WaitTick()
+        {
             if (!Waiting) return;
             // Alone now: sleep.
             if (!plugin.Ready) { Plugin.Log("SLEEP_ALONE"); Sleep(); return; }
@@ -93,9 +99,81 @@ namespace IronbarkCoop
             Gm.uIManager.StartCoroutine(Gm.uIManager.FadeToSleep(nextNight));
         }
 
+        // The morning after night 2: Marcus wakes up on the balcony with his coffee (the game's morning), Tessa wakes
+        // up still in bed and gets up when she likes (Space), into the tower. Her own coffee scene does not run.
+        public bool MorningInBed { get; private set; }
+
+        internal void WakeInBed()
+        {
+            var gm = Gm; var tower = Tower;
+            if (!gm || !tower || !tower.playerInBed) return;
+            if (tower.playerCoffee) tower.playerCoffee.SetActive(false);
+            if (tower.mugInHand) tower.mugInHand.gameObject.SetActive(false);
+            if (tower.pictureMode) tower.pictureMode.gameObject.SetActive(false);
+            gm.playerFP.SetActive(false);
+            tower.playerInBed.SetActive(true);
+            tower.playerInBed.transform.localEulerAngles = new Vector3(0f, 30f, 0f);
+            if (tower.bedMovingCam) { tower.bedMovingCam.enabled = true; tower.bedMovingCam.xRotation = 0f; tower.bedMovingCam.yRotation = 0f; }
+            tower.state = WatchTowerManager.State.InBed;
+            MorningInBed = true;
+            Plugin.Log("MORNING_IN_BED");
+        }
+
+        void MorningTick()
+        {
+            if (!MorningInBed || !Gm || !Gm.uIManager || Gm.uIManager.inTransition) return;
+            var hint = ConnectionPanel.L("[ПРОБЕЛ] Встать", "[SPACE] Get up");
+            if (Gm.uIManager.controlsText.text != hint) Gm.uIManager.controlsText.text = hint;
+        }
+
+        IEnumerator GetUpInTheMorning()
+        {
+            var gm = Gm; var tower = Tower; var ui = gm.uIManager;
+            moving = true;
+            MorningInBed = false;
+            ui.controlsText.text = "";
+            yield return Fade(ui, true);
+            tower.playerInBed.SetActive(false);
+            gm.playerFP.SetActive(true);
+            var fp = gm.playerFP.transform;
+            var controller = gm.playerFP.GetComponent<CharacterController>();
+            if (controller) controller.enabled = false;
+            fp.position = BesideTheBed(tower) + Vector3.up * (controller ? controller.height * 0.5f - controller.center.y + 0.05f : 1f);
+            var away = tower.door ? tower.door.transform.position - tower.bed.transform.position : -tower.bed.transform.forward; away.y = 0f;
+            fp.rotation = Quaternion.LookRotation(away.sqrMagnitude > 0.01f ? away.normalized : Vector3.forward);
+            Physics.SyncTransforms();
+            if (controller) controller.enabled = true;
+            gm.firstPersonController.enabled = true;
+            tower.state = WatchTowerManager.State.Inside;
+            yield return Fade(ui, false);
+            moving = false;
+            Plugin.Log("MORNING_GOT_UP at " + fp.position.ToString("F2"));
+        }
+
+        // Floor between the bed and the door, where there is room to stand.
+        static Vector3 BesideTheBed(WatchTowerManager tower)
+        {
+            var bed = tower.bed.transform.position;
+            var door = tower.door ? tower.door.transform.position : bed - tower.bed.transform.forward * 2f;
+            foreach (float t in new[] { 0.45f, 0.3f, 0.6f, 0.75f })
+            {
+                var spot = Vector3.Lerp(bed, door, t);
+                if (!Physics.Raycast(spot + Vector3.up * 1.5f, Vector3.down, out var floor, 3f, ~0, QueryTriggerInteraction.Ignore)) continue;
+                if (Physics.CheckCapsule(floor.point + Vector3.up * 0.35f, floor.point + Vector3.up * 1.6f, 0.25f, ~0, QueryTriggerInteraction.Ignore)) continue;
+                return floor.point;
+            }
+            return Vector3.Lerp(bed, door, 0.45f);
+        }
+
         // Space while waiting: up again (the game's own Space in bed would run a different night's get-up).
         internal bool TakeSpace()
         {
+            if (MorningInBed)
+            {
+                if (moving || Gm.uIManager.inTransition || Gm.isConversing || !Gm.inputHandler.spaceInput) return false;
+                plugin.StartCoroutine(GetUpInTheMorning());
+                return true;
+            }
             if (!Waiting || moving || Gm.uIManager.inTransition || !Gm.inputHandler.spaceInput) return false;
             plugin.StartCoroutine(GetUp());
             return true;
@@ -158,9 +236,24 @@ namespace IronbarkCoop
         static void Prefix()
         {
             var sleep = SleepSync.Instance;
-            if (sleep == null || !sleep.Waiting || !GameManager.instance) return;
+            if (sleep == null || !(sleep.Waiting || sleep.MorningInBed) || !GameManager.instance) return;
             if (sleep.TakeSpace()) SetSpace.Invoke(GameManager.instance.inputHandler, new object[] { false });
             else if (GameManager.instance.inputHandler.spaceInput) SetSpace.Invoke(GameManager.instance.inputHandler, new object[] { false });
+        }
+    }
+}
+
+namespace IronbarkCoop
+{
+    // The morning after night 2 (Seq3Start sets up the coffee on the balcony): the partner who does not lead the story
+    // wakes up in bed instead.
+    [HarmonyPatch(typeof(WatchTowerManager), nameof(WatchTowerManager.Seq3Start))]
+    internal static class MorningInBedPatch
+    {
+        static void Postfix()
+        {
+            var plugin = Plugin.Instance;
+            if (plugin && plugin.Ready && plugin.FollowsStory) SleepSync.Instance?.WakeInBed();
         }
     }
 }

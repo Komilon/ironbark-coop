@@ -13,6 +13,7 @@ namespace IronbarkCoop
     internal static class Seats
     {
         public const float BoothEyeHeight = 1.2f;
+        const float StandingEyeHeight = 1.62f;
 
         public static void DescribeInactive(Packet packet, Vector3 lastFeet, bool hasLastFeet)
         {
@@ -54,6 +55,20 @@ namespace IronbarkCoop
             // Any other seat the game moves the camera to near the body (computer chair, washroom): sit there.
             // Seats the game moves you to from anywhere (the morning coffee chair on the balcony) count wherever you stood.
             bool knownSeat = tower && tower.playerCoffee && tower.playerCoffee.activeInHierarchy;
+            // The morning coffee is drunk standing at the rail: shown standing there, facing where the player looks.
+            if (knownSeat && camera)
+            {
+                var eye = camera.transform;
+                var standing = eye.position - Vector3.up * StandingEyeHeight;
+                if (Physics.Raycast(eye.position - Vector3.up * 0.6f, Vector3.down, out var floor, 2f, ~0, QueryTriggerInteraction.Ignore)) standing = floor.point;
+                packet.active = true;
+                packet.sit = false;
+                packet.position = standing;
+                packet.rotation = Quaternion.Euler(0f, eye.eulerAngles.y, 0f);
+                packet.pitch = Mathf.DeltaAngle(0f, eye.eulerAngles.x);
+                latchedYaw = float.NaN;
+                return;
+            }
             if (!camera || (!hasLastFeet && !knownSeat) || gm && gm.isDead) { latchedYaw = float.NaN; return; }
             var view = camera.transform;
             // At the desk the computer screen has its own camera; the seat is where the chair's camera rests.

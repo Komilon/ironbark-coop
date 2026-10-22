@@ -12,7 +12,7 @@ namespace IronbarkCoop
     public sealed class Packet
     {
         public string kind, scene, code, build;
-        public const int Protocol = 6;
+        public const int Protocol = 7;
         public int version = Protocol;
         public Vector3 position;
         public Quaternion rotation;
@@ -54,6 +54,21 @@ namespace IronbarkCoop
         public string hand;
     }
 
+    // The story sets the next night when a level ends (StartSeq; the campfire sets night 4): remembered by the mod and
+    // sent to the partner, so both towers open on that night.
+    [HarmonyPatch(typeof(PlayerPrefs), nameof(PlayerPrefs.SetInt))]
+    internal static class StartSeqPatch
+    {
+        internal static bool Applying;
+        static void Postfix(string key, int value)
+        {
+            if (Applying || key != "StartSeq" || value <= 1 || value > 8) return;
+            Plugin.NextNight = value;
+            Plugin.Log("NEXT_NIGHT " + value);
+            if (Plugin.Instance && Plugin.Instance.Ready) Plugin.Instance.Send(new Packet { kind = "next-night", arg = value });
+        }
+    }
+
     // Applies the partner's night right before the tower reads it (PlayerPrefs may be rewritten while loading).
     [HarmonyPatch(typeof(WatchTowerManager), "Start")]
     internal static class PartnerNightPatch
@@ -62,10 +77,17 @@ namespace IronbarkCoop
         static void Prefix()
         {
             applied = Plugin.PendingNight;
-            if (applied == 0) return;
-            PlayerPrefs.SetInt("StartSeq", applied);
-            Plugin.Log("NIGHT_FROM_PARTNER " + applied);
+            string from = "NIGHT_FROM_PARTNER ";
+            // Otherwise the night the story set at the end of the last level (in either world: the player who put out
+            // the campfire set it only in their own game, and two copies on one PC share the setting the tower clears).
+            if (applied == 0) { applied = Plugin.NextNight; from = "NIGHT_FROM_STORY "; }
+            Plugin.NextNight = 0;
             Plugin.PendingNight = 0;
+            if (applied == 0) return;
+            StartSeqPatch.Applying = true;
+            PlayerPrefs.SetInt("StartSeq", applied);
+            StartSeqPatch.Applying = false;
+            Plugin.Log(from + applied);
         }
 
         // Nights 2 and 7 have no Start branch (the game only reaches them by sleeping); run their intro like FadeToSleep does.
@@ -79,7 +101,7 @@ namespace IronbarkCoop
         }
     }
 
-    [BepInPlugin("astra.ironbark.coop", "Ironbark Cooperative", "0.5.0")]
+    [BepInPlugin("astra.ironbark.coop", "Ironbark Cooperative", "0.6.0")]
     public sealed class Plugin : BaseUnityPlugin
     {
         internal static Plugin Instance;
@@ -163,6 +185,8 @@ namespace IronbarkCoop
         int labPushSpeed;
         bool towerStarted;
         internal static int PendingNight;
+        // The night the story set for the next tower load (either world), until the tower reads it.
+        internal static int NextNight;
 
         void Awake()
         {
@@ -420,6 +444,7 @@ namespace IronbarkCoop
             if (p == null) return;
             // The partner picked another look in the menu: their body is rebuilt with the next pose.
             if (p.kind == "look") { partnerLook = p.look; avatar?.Dispose(); avatar = null; Logger.LogInfo("PARTNER_LOOK " + p.look); return; }
+            if (p.kind == "next-night") { if (p.arg > 1 && p.arg <= 8) { NextNight = p.arg; Logger.LogInfo("NEXT_NIGHT_FROM_PARTNER " + p.arg); } return; }
             if (p.kind == "hello")
             {
                 // Steam lobbies are friends-only, so membership replaces the shared session code there.
@@ -474,7 +499,7 @@ namespace IronbarkCoop
                 {
                     loadingScene = p.scene;
                     // Join the partner's night, the same way the main menu's Continue does.
-                    if (int.TryParse(p.name, out int night) && night >= 1 && night <= 8) { PlayerPrefs.SetInt("StartSeq", night); PendingNight = night; }
+                    if (int.TryParse(p.name, out int night) && night >= 1 && night <= 8) { StartSeqPatch.Applying = true; PlayerPrefs.SetInt("StartSeq", night); StartSeqPatch.Applying = false; PendingNight = night; }
                     PlayerPrefs.SetInt("FromMenu", 1);
                     Logger.LogInfo("SCENE_FOLLOW " + p.scene + " night=" + p.name + " epoch=" + p.arg + " StartSeq=" + PlayerPrefs.GetInt("StartSeq", -1));
                     SceneManager.LoadSceneAsync(p.scene);
@@ -617,11 +642,13 @@ namespace IronbarkCoop
         {
             var tower = GameManager.instance ? GameManager.instance.watchTowerManager : null;
             if (tower && towerStarted) return (int)tower.seq + 1;
-            return PlayerPrefs.GetInt("StartSeq", 1);
+            return NextNight > 0 ? NextNight : PlayerPrefs.GetInt("StartSeq", 1);
         }
         void SceneLoaded(Scene scene, LoadSceneMode mode)
         {
             if (mode != LoadSceneMode.Single) return;
+            // Back in the menu a chapter is picked afresh (its button sets the night).
+            if (scene.name == "Main Menu") NextNight = 0;
             bool fromPartner = loadingScene == scene.name;
             loadingScene = null;
             avatar?.Dispose(); avatar = null;
