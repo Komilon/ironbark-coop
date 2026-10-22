@@ -2,6 +2,24 @@
 
 Both players must use the same mod version. / У обоих игроков должна быть одна версия мода.
 
+## 0.5.0 — Scratch Creek optional, look picker / Scratch Creek не обязательна, выбор внешности
+
+Not compatible with 0.4.0 in the same session (update both). / С 0.4.0 в одной игре не работает — обновитесь оба.
+
+**English**
+- Scratch Creek is no longer needed: Ironbark's own people (the ranger, the diner waitress, the man in a suit) are read from your Ironbark install the first time the game starts (well under a second) and used as partner bodies, with every motion (crouching and sleeping are made from Ironbark's standing and walking clips).
+- Look picker in the Multiplayer menu: a 3D view you turn with the mouse, every pose (standing, walking, running, crouching, sitting, asleep), Scratch Creek's Marcus and Tessa when you have it. The pick is sent to your partner and can be changed while connected; a partner without your pick sees a similar Ironbark character.
+- Role (who leads the story) and look are separate settings.
+- With Scratch Creek, Ironbark's people move with Scratch Creek's animations.
+- New config: `Character / Look`; `Character / ScratchCreekPath = none` ignores Scratch Creek.
+
+**Русский**
+- Scratch Creek больше не нужна: люди из самой Ironbark (смотритель, официантка из закусочной, мужчина в костюме) при первом запуске читаются из вашей установленной Ironbark (меньше секунды) и становятся телом партнёра — со всеми движениями (присед и сон собраны из стойки и ходьбы Ironbark).
+- Выбор внешности в меню мультиплеера: 3D-просмотр, модель крутится мышью, все позы (стоит, идёт, бежит, присел, сидит, спит), Маркус и Тесса из Scratch Creek, если она есть. Выбор передаётся партнёру и меняется и после подключения; у кого нет вашего персонажа, увидит похожего из Ironbark.
+- Роль (кто ведёт сюжет) и внешность — отдельные настройки.
+- Со Scratch Creek люди из Ironbark двигаются с анимациями Scratch Creek.
+- Новые настройки: `Character / Look`; `Character / ScratchCreekPath = none` — не использовать Scratch Creek.
+
 ## 0.4.0 — first public release / первый публичный релиз
 
 Playtest fixes from five sessions and a full pass through nights 1–3. Network protocol 5 (not compatible with 0.3.0).

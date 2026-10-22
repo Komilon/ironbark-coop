@@ -137,8 +137,12 @@ namespace IronbarkCoop
     {
         Text title, hostSlot, partnerSlot, status, addresses;
         RectTransform hostButton, joinButton, steamButton, inviteButton, playButton, leaveButton, ipRow, copyButton, upnpButton;
-        Text upnpLabel, characterLabel;
-        RectTransform characterButton;
+        Text upnpLabel, characterLabel, lookLabel, poseLabel, lookName;
+        RectTransform characterButton, lookButton, prevButton, nextButton, poseButton, chooseButton, closeButton;
+        CharacterPreview preview;
+        bool previewOpen;
+        int lookIndex;
+        Transform back;
         InputField ip;
         float talkPulse;
         static string L(string ru, string en) => ConnectionPanel.L(ru, en);
@@ -185,9 +189,36 @@ namespace IronbarkCoop
                 var p = Plugin.Instance;
                 if (p) p.SetCharacter(p.CharacterSetting == "auto" ? "marcus" : p.CharacterSetting == "marcus" ? "tessa" : "auto");
             });
-            characterButton.anchoredPosition = new Vector2(bx, top - 266f);
+            characterButton.anchoredPosition = new Vector2(bx, top - 264f);
             characterLabel = characterButton.GetComponent<Text>();
-            characterLabel.fontSize = 15;
+            characterLabel.fontSize = 13;
+            // Look: who the partner sees you as, picked in a 3D view (Scratch Creek's survivors and Ironbark's people).
+            lookButton = MultiplayerMenu.Clone(big, transform, "look", "", OpenPreview);
+            lookButton.anchoredPosition = new Vector2(bx, top - 283f);
+            lookLabel = lookButton.GetComponent<Text>();
+            lookLabel.fontSize = 13;
+            float py = top - 122f;
+            prevButton = MultiplayerMenu.Clone(big, transform, "look prev", L("‹ Пред.", "‹ Prev"), () => Step(-1));
+            prevButton.anchoredPosition = new Vector2(bx, py); py -= 31f;
+            nextButton = MultiplayerMenu.Clone(big, transform, "look next", L("След. ›", "Next ›"), () => Step(1));
+            nextButton.anchoredPosition = new Vector2(bx, py); py -= 31f;
+            poseButton = MultiplayerMenu.Clone(big, transform, "look pose", "", () => { if (preview) preview.Current = (CharacterPreview.Pose)(((int)preview.Current + 1) % 6); });
+            poseButton.anchoredPosition = new Vector2(bx, py); py -= 40f;
+            poseLabel = poseButton.GetComponent<Text>();
+            poseLabel.fontSize = 15;
+            chooseButton = MultiplayerMenu.Clone(big, transform, "look choose", L("Выбрать", "Choose"), () =>
+            {
+                var looks = ScRuntime.Available();
+                if (looks.Count > 0) Plugin.Instance?.SetLook(looks[lookIndex % looks.Count].Id);
+                previewOpen = false;
+            });
+            chooseButton.anchoredPosition = new Vector2(bx, py); py -= 31f;
+            closeButton = MultiplayerMenu.Clone(big, transform, "look close", L("Отмена", "Cancel"), () => previewOpen = false);
+            closeButton.anchoredPosition = new Vector2(bx, py);
+            lookName = Label("look name", x, top - 40f, 16, FontStyle.Bold, 150f, 44f);
+            lookName.alignment = TextAnchor.UpperLeft;
+            preview = CharacterPreview.Create(transform, new Vector2(x + 222f + (260f - title.rectTransform.sizeDelta.x) / 2f, top - 148f), new Vector2(151f, 252f));
+            foreach (Transform child in transform) if (child.name == "Back") back = child;
             // Fixed slot above Back (which sits at the panel bottom) so the list never overlaps it.
             addresses = Label("addresses", x, top - 206f, 10, FontStyle.Normal, 270f, 44f);
         }
@@ -237,10 +268,53 @@ namespace IronbarkCoop
             return row;
         }
 
+        void OpenPreview()
+        {
+            var looks = ScRuntime.Available();
+            if (looks.Count == 0) return;
+            var current = Plugin.Instance ? Plugin.Instance.MyLook : null;
+            lookIndex = Math.Max(0, looks.FindIndex(l => l.Id == current));
+            previewOpen = true;
+        }
+
+        void Step(int by)
+        {
+            var looks = ScRuntime.Available();
+            if (looks.Count > 0) lookIndex = (lookIndex + by + looks.Count) % looks.Count;
+        }
+
+        static string LookName(string id)
+        {
+            var info = ScRuntime.Info(id);
+            return info == null ? "?" : L(info.Russian, info.English);
+        }
+
+        // While the look picker is open only its controls show (the lobby's own come back when it closes).
+        bool UpdatePreview()
+        {
+            foreach (var control in new[] { prevButton, nextButton, poseButton, chooseButton, closeButton }) control.gameObject.SetActive(previewOpen);
+            lookName.gameObject.SetActive(previewOpen);
+            preview.gameObject.SetActive(previewOpen);
+            if (back) back.gameObject.SetActive(!previewOpen);
+            if (!previewOpen) return false;
+            foreach (var control in new Component[] { hostSlot, partnerSlot, status, addresses, hostButton, joinButton, ipRow, steamButton, inviteButton, playButton, leaveButton, copyButton, upnpButton, characterButton, lookButton })
+                control.gameObject.SetActive(false);
+            var looks = ScRuntime.Available();
+            var look = looks.Count > 0 ? looks[lookIndex % looks.Count] : null;
+            preview.Look = look?.Id;
+            title.text = L("Внешность", "Look");
+            lookName.text = look == null ? "" : L(look.Russian, look.English) + "\n<size=11>" + (look.ScratchCreek ? "Scratch Creek" : "Ironbark Lookout") + "</size>";
+            poseLabel.text = L("Поза: ", "Pose: ") + CharacterPreview.PoseName(preview.Current);
+            return true;
+        }
+
         void Update()
         {
             var plugin = Plugin.Instance;
             if (!plugin) return;
+            if (UpdatePreview()) return;
+            // The lobby rows hidden by the picker come back (the rows below set their own visibility).
+            hostSlot.gameObject.SetActive(true); partnerSlot.gameObject.SetActive(true); status.gameObject.SetActive(true);
             talkPulse += Time.unscaledDeltaTime * 6f;
             string me = plugin.MyName, partner = plugin.PartnerName;
             bool connected = partner != null, host = plugin.IsHost;
@@ -264,11 +338,13 @@ namespace IronbarkCoop
             bool waitingHost = host && plugin.Online && !connected && !plugin.UsingSteam;
             copyButton.gameObject.SetActive(waitingHost && plugin.HostCode != null);
             upnpButton.gameObject.SetActive(idle);
-            bool survivors = ScRuntime.Ready && ScRuntime.Pack.Characters.Count >= 2;
-            characterButton.gameObject.SetActive(survivors && !connected);
+            lookButton.gameObject.SetActive(ScRuntime.Available().Count > 0);
+            lookLabel.text = L("Внешность: ", "Look: ") + LookName(plugin.MyLook) + (plugin.LookSetting == "auto" ? L(" (авто)", " (auto)") : "");
+            // The story role: Marcus leads the story (the diner, the ranger), whatever either player looks like.
+            characterButton.gameObject.SetActive(!connected);
             string Name(string id) => id == "tessa" ? L("Тесса", "Tessa") : L("Маркус", "Marcus");
-            characterLabel.text = L("Персонаж: ", "Survivor: ") + (plugin.CharacterSetting == "auto" ? L("авто (хост — Маркус, гость — Тесса)", "auto (host Marcus, guest Tessa)") : Name(plugin.CharacterSetting));
-            if (connected && survivors && plugin.PartnerCharacter != null)
+            characterLabel.text = L("Роль: ", "Role: ") + (plugin.CharacterSetting == "auto" ? L("авто (хост — Маркус)", "auto (host is Marcus)") : Name(plugin.CharacterSetting));
+            if (connected && plugin.PartnerCharacter != null)
                 partnerSlot.text += "  (" + Name(plugin.PartnerCharacter) + ")";
             upnpLabel.text = L("Авто-порт UPnP (эксперимент): ", "Auto port UPnP (experimental): ") + (plugin.UpnpEnabled ? L("вкл", "on") : L("выкл", "off"));
             if (waitingHost && plugin.HostCode != null)

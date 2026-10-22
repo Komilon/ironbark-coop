@@ -122,12 +122,14 @@ namespace IronbarkCoop
                     UnityEngine.Object.DestroyImmediate(child.gameObject);
         }
 
-        public PartnerAvatar(string name, string character = null)
+        public PartnerAvatar(string name, string character = null, string look = null)
         {
             Root = new GameObject("Coop Partner");
             GameObject body;
-            // Scratch Creek survivor (from the local pack) when available; otherwise an Ironbark humanoid.
-            var survivor = string.IsNullOrEmpty(character) ? null : ScRuntime.Template(character);
+            // The partner's chosen look (a Scratch Creek survivor or one of Ironbark's people) if this computer has it,
+            // else one of the same kind; the old clone of a scene NPC only if no pack could be read at all.
+            string resolved = string.IsNullOrEmpty(character) ? null : ScRuntime.ResolveLook(look, character);
+            var survivor = ScRuntime.Template(resolved);
             if (survivor)
             {
                 body = UnityEngine.Object.Instantiate(survivor, Root.transform, false);
@@ -136,8 +138,8 @@ namespace IronbarkCoop
                 body.SetActive(true);
                 driver = Root.AddComponent<AvatarDriver>();
                 driver.InitializeSurvivor(body, name);
-                driver.BindLie(character);
-                Character = character;
+                driver.BindLie(ScRuntime.IsFemale(resolved));
+                Character = resolved;
                 return;
             }
             if (template)
@@ -287,11 +289,11 @@ namespace IronbarkCoop
         }
 
 
-        internal void BindLie(string character)
+        internal void BindLie(bool female)
         {
             if (survivor == null) return;
-            survivor.Bind(ScPoseAnimator.Motion.Lie, character == "tessa" ? "sleeping tessa" : "Laying Sleeping");
-            if (!survivor.Has(ScPoseAnimator.Motion.Lie)) survivor.Bind(ScPoseAnimator.Motion.Lie, character == "tessa" ? "Laying Sleeping" : "sleeping tessa");
+            survivor.Bind(ScPoseAnimator.Motion.Lie, female ? "sleeping tessa" : "Laying Sleeping");
+            if (!survivor.Has(ScPoseAnimator.Motion.Lie)) survivor.Bind(ScPoseAnimator.Motion.Lie, female ? "Laying Sleeping" : "sleeping tessa");
             Plugin.Log("AVATAR_LIE_CLIP " + survivor.Has(ScPoseAnimator.Motion.Lie));
         }
 

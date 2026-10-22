@@ -60,6 +60,103 @@ namespace IronbarkCoop
             return ctx.Pack;
         }
 
+        // Players without Scratch Creek: stand-ins read from Ironbark Lookout itself (every player owns it). The game's
+        // own people: the waitress, the park ranger and the suited customer from the diner (all full Mixamo rigs).
+        public static readonly (string level, string gameObject, string id, string display)[] IronbarkPeople = {
+            ("level4", "Waitress", "ib-waitress", "Waitress"), ("level5", "ParkRanger", "ib-ranger", "Ranger"), ("level4", "SuitGuy", "ib-suitguy", "Suit guy") };
+        // Ironbark's humanoid clips, stored under the Scratch Creek names the animator binds.
+        static readonly (string file, string clip, string asName)[] IronbarkClips = {
+            ("sharedassets1.assets", "Idle", "Idle_Stance_01"), ("sharedassets1.assets", "Standard Walk", "Walk Player"),
+            ("sharedassets6.assets", "run", "Tired Run Player"), ("sharedassets5.assets", "Typing", "sit-dozeoff-e") };
+
+        public static ScPack ExtractIronbark(string dataDir, string classPackage, Action<string> log)
+        {
+            var ctx = new Context { Manager = new AssetsManager(), DataDir = dataDir, Pack = new ScPack { Source = "ironbark:" + dataDir }, Log = log ?? (_ => { }) };
+            var manager = ctx.Manager;
+            manager.LoadClassPackage(classPackage);
+            try
+            {
+                foreach (var (levelName, goName, id, display) in IronbarkPeople)
+                {
+                    var level = manager.LoadAssetsFile(Path.Combine(dataDir, levelName), true);
+                    if (manager.ClassDatabase == null) manager.LoadClassDatabaseFromPackage(level.file.Metadata.UnityVersion);
+                    var go = FindGameObject(ctx, level, goName);
+                    if (go == null) { ctx.Log("character missing: " + goName); continue; }
+                    ctx.Pack.Characters.Add(Character(ctx, level, go, id, display));
+                }
+                foreach (var (file, clipName, asName) in IronbarkClips)
+                {
+                    var inst = manager.LoadAssetsFile(Path.Combine(dataDir, file), true);
+                    var info = FindByName(ctx, inst, AssetClassID.AnimationClip, clipName);
+                    if (info == null) { ctx.Log("clip missing: " + clipName); continue; }
+                    var clip = Clip(manager.GetBaseField(inst, info));
+                    clip.Name = asName;
+                    ctx.Pack.Clips.Add(clip);
+                }
+                Synthesize(ctx.Pack);
+            }
+            finally { manager.UnloadAll(true); }
+            return ctx.Pack;
+        }
+
+        // Muscle indices (Unity's HumanTrait.MuscleName order).
+        const int SpineFB = 0, ChestFB = 3, LUpperLegFB = 21, LLowerLeg = 24, LFoot = 26, RUpperLegFB = 29, RLowerLeg = 32, RFoot = 34;
+
+        // Ironbark has no crouch or sleeping clips: crouches are the idle and the walk with bent knees and a lower body;
+        // sleeping is the idle laid on its back.
+        static void Synthesize(ScPack pack)
+        {
+            var idle = pack.Clip("Idle_Stance_01");
+            var walk = pack.Clip("Walk Player");
+            if (idle != null) pack.Clips.Add(Bent(idle, "CrouchFixed"));
+            if (walk != null) pack.Clips.Add(Bent(walk, "Crouch Walk Forward"));
+            if (idle != null) { pack.Clips.Add(Laid(idle, "Laying Sleeping")); pack.Clips.Add(Laid(idle, "sleeping tessa")); }
+        }
+
+        static ScClip Copy(ScClip source, string name) => new ScClip {
+            Name = name, Length = source.Length, SampleRate = source.SampleRate, Loop = true, FrameCount = source.FrameCount, Data = (float[])source.Data.Clone() };
+
+        static ScClip Bent(ScClip source, string name)
+        {
+            var clip = Copy(source, name);
+            for (int f = 0; f < clip.FrameCount; f++)
+            {
+                int o = f * ScClip.Stride, m = o + 7;
+                clip.Data[o + 1] -= 0.3f;
+                clip.Data[m + SpineFB] += 0.25f; clip.Data[m + ChestFB] += 0.15f;
+                foreach (var (upper, lower, foot) in new[] { (LUpperLegFB, LLowerLeg, LFoot), (RUpperLegFB, RLowerLeg, RFoot) })
+                {
+                    clip.Data[m + upper] = Math.Min(1f, clip.Data[m + upper] + 0.65f);
+                    clip.Data[m + lower] = Math.Max(-1f, clip.Data[m + lower] - 0.9f);
+                    clip.Data[m + foot] = Math.Min(1f, clip.Data[m + foot] + 0.35f);
+                }
+            }
+            return clip;
+        }
+
+        static ScClip Laid(ScClip source, string name)
+        {
+            var clip = Copy(source, name);
+            // Body turned 90 degrees back about its side axis (face up), legs and spine straight.
+            float s = (float)Math.Sqrt(0.5);
+            for (int f = 0; f < clip.FrameCount; f++)
+            {
+                int o = f * ScClip.Stride, m = o + 7;
+                float x = clip.Data[o + 3], y = clip.Data[o + 4], z = clip.Data[o + 5], w = clip.Data[o + 6];
+                // (-90 deg about X) * q
+                float qx = -s, qw = s;
+                clip.Data[o + 3] = qw * x + qx * w;
+                clip.Data[o + 4] = qw * y - qx * z;
+                clip.Data[o + 5] = qw * z + qx * y;
+                clip.Data[o + 6] = qw * w - qx * x;
+                clip.Data[m + SpineFB] = 0f; clip.Data[m + ChestFB] = 0f;
+                clip.Data[m + LUpperLegFB] = 0f; clip.Data[m + RUpperLegFB] = 0f;
+                clip.Data[m + LLowerLeg] = 1f; clip.Data[m + RLowerLeg] = 1f;
+                clip.Data[o + 1] = 0.25f;
+            }
+            return clip;
+        }
+
         static AssetFileInfo FindByName(Context ctx, AssetsFileInstance inst, AssetClassID type, string name)
         {
             foreach (var info in inst.file.GetAssetsOfType(type))

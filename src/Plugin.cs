@@ -12,7 +12,7 @@ namespace IronbarkCoop
     public sealed class Packet
     {
         public string kind, scene, code, build;
-        public const int Protocol = 5;
+        public const int Protocol = 6;
         public int version = Protocol;
         public Vector3 position;
         public Quaternion rotation;
@@ -26,6 +26,8 @@ namespace IronbarkCoop
         public Quaternion rvRot;
         public float steer;
         public string character;
+        // How the player looks (ScRuntime look id); the story role stays in character.
+        public string look;
         public int voiceSent, voiceReceived;
         public long voiceConsumed;
         public double voiceEnergy;
@@ -77,7 +79,7 @@ namespace IronbarkCoop
         }
     }
 
-    [BepInPlugin("astra.ironbark.coop", "Ironbark Cooperative", "0.4.0")]
+    [BepInPlugin("astra.ironbark.coop", "Ironbark Cooperative", "0.5.0")]
     public sealed class Plugin : BaseUnityPlugin
     {
         internal static Plugin Instance;
@@ -147,7 +149,7 @@ namespace IronbarkCoop
         const int Port = 25061;
         string build;
         PartnerAvatar avatar;
-        string playerName, partnerName = "Partner", survivorSetting, partnerCharacter;
+        string playerName, partnerName = "Partner", survivorSetting, partnerCharacter, lookSetting, partnerLook;
         bool partnerCrouch, partnerLight;
         float partnerPitch;
         static readonly System.Reflection.FieldInfo CrouchField = AccessTools.Field(typeof(FirstPersonController), "isCrouching");
@@ -203,7 +205,8 @@ namespace IronbarkCoop
             ulong.TryParse(Arg("+connect_lobby"), out pendingLobby);
             SteamFriends.OnGameLobbyJoinRequested += LobbyJoinRequested;
             survivorSetting = Config.Bind("Character", "Survivor", "auto", "marcus, tessa or auto (host Marcus, guest Tessa). Uses your own Scratch Creek install if present.").Value;
-            ScRuntime.Begin(Config.Bind("Character", "ScratchCreekPath", "", "Scratch Creek data folder if it is not found automatically.").Value);
+            lookSetting = Config.Bind("Character", "Look", "auto", "How you look to your partner: auto (by role), marcus, tessa (Scratch Creek), ib-ranger, ib-waitress, ib-suitguy (Ironbark's own people). Chosen in the Multiplayer menu.").Value;
+            ScRuntime.Begin(Config.Bind("Character", "ScratchCreekPath", "", "Scratch Creek data folder if it is not found automatically; none = do not use Scratch Creek.").Value);
             upnpEnabled = Config.Bind("Network", "UPnP", false, "Experimental: ask the router to open port 25061 (TCP+UDP) while hosting.").Value;
             bridgeDir = Arg("-coop-bridge");
             SceneManager.sceneLoaded += SceneLoaded;
@@ -259,6 +262,17 @@ namespace IronbarkCoop
         internal void SetCharacter(string id) { survivorSetting = id; Config.Bind("Character", "Survivor", "auto").Value = id; }
         internal string PartnerCharacter => partnerCharacter;
         internal string CharacterSetting => survivorSetting == "marcus" || survivorSetting == "tessa" ? survivorSetting : "auto";
+        // The look this player shows: the pick, or by role ("auto"); sent to the partner, who builds it if they have it.
+        internal string LookSetting => string.IsNullOrEmpty(lookSetting) ? "auto" : lookSetting;
+        internal string MyLook => ScRuntime.ResolveLook(LookSetting, MyCharacter);
+        internal string PartnerAppearance => partnerLook;
+        internal string PartnerBody => avatar != null ? avatar.Character : null;
+        internal void SetLook(string id)
+        {
+            lookSetting = id;
+            Config.Bind("Character", "Look", "auto").Value = id;
+            if (authenticated) Send(new Packet { kind = "look", look = LookSetting, character = MyCharacter });
+        }
 
         string LocalName => !string.IsNullOrWhiteSpace(playerName) ? playerName
             : !string.IsNullOrEmpty(SteamTransport.LocalName) ? SteamTransport.LocalName : Environment.UserName;
@@ -299,7 +313,7 @@ namespace IronbarkCoop
                     if (message == "Connected")
                     {
                         authenticated = false;
-                        Send(new Packet { kind = "hello", code = code, build = build, name = LocalName, character = MyCharacter });
+                        Send(new Packet { kind = "hello", code = code, build = build, name = LocalName, character = MyCharacter, look = LookSetting });
                     }
                     else if (message.StartsWith("Disconnected")) { authenticated = false; if (avatar != null) avatar.Active = false; PartnerLeft(); }
                 }
@@ -404,6 +418,8 @@ namespace IronbarkCoop
         void Receive(Packet p)
         {
             if (p == null) return;
+            // The partner picked another look in the menu: their body is rebuilt with the next pose.
+            if (p.kind == "look") { partnerLook = p.look; avatar?.Dispose(); avatar = null; Logger.LogInfo("PARTNER_LOOK " + p.look); return; }
             if (p.kind == "hello")
             {
                 // Steam lobbies are friends-only, so membership replaces the shared session code there.
@@ -414,6 +430,7 @@ namespace IronbarkCoop
                 }
                 authenticated = true; status = "Partner connected";
                 partnerCharacter = p.character == "marcus" || p.character == "tessa" ? p.character : (host ? "tessa" : "marcus");
+                partnerLook = p.look;
                 partnerName = string.IsNullOrWhiteSpace(p.name) ? "Partner" : p.name.Trim().Substring(0, Math.Min(24, p.name.Trim().Length));
                 Logger.LogInfo("AUTHENTICATED");
                 Story.PartnerConnected();
@@ -468,7 +485,7 @@ namespace IronbarkCoop
             if (!Finite(p.position.x) || !Finite(p.position.y) || !Finite(p.position.z)) return;
             if (!Finite(p.rotation.x) || !Finite(p.rotation.y) || !Finite(p.rotation.z) || !Finite(p.rotation.w)) return;
             if (!Finite(p.pitch)) return;
-            if (avatar == null) { avatar = new PartnerAvatar(partnerName, partnerCharacter); heldShown = null; Logger.LogInfo("REMOTE_AVATAR_CREATED"); }
+            if (avatar == null) { avatar = new PartnerAvatar(partnerName, partnerCharacter, partnerLook); heldShown = null; Logger.LogInfo("REMOTE_AVATAR_CREATED " + avatar.Character); }
             // The dreamer does not see the partner (only hears her, far away).
             avatar.Active = p.active && !Dream.Dreaming;
             targetPosition = p.position;

@@ -8,8 +8,8 @@ namespace IronbarkCoop
     // Plain data with no Unity types, so the same file builds the offline explorer and the mod. Never shipped.
     internal sealed class ScPack
     {
-        // 2: adds the sleeping clips (a new number re-reads the player's Scratch Creek once).
-        public const int FormatVersion = 2;
+        // 2: adds the sleeping clips; 3: Ironbark's people lie low (a new number re-reads the packs once).
+        public const int FormatVersion = 3;
         public string Source = "";
         public List<ScCharacter> Characters = new List<ScCharacter>();
         public List<ScTexture> Textures = new List<ScTexture>();

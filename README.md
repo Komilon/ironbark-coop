@@ -18,7 +18,7 @@ You both play one story together, each in your own body, with your own flashligh
 ### Requirements
 
 - **Fears to Fathom: Ironbark Lookout** for both players, **the same version**. The installer prints a "game build code"; yours and your friend's must match.
-- **Fears to Fathom: Scratch Creek** for both players, to see each other as Marcus and Tessa. Without it the partner looks like the park ranger.
+- **Fears to Fathom: Scratch Creek** — optional. With it you can look like Marcus or Tessa. Without it you pick one of Ironbark's own people (the ranger, the diner waitress, the man in a suit), read from your Ironbark install.
 - Windows x64.
 - A shared network: LAN, a virtual LAN (**Radmin VPN**, ZeroTier, Tailscale) or a forwarded port on the router.
 
@@ -54,7 +54,8 @@ The code carries an address you can be reached at: external (if UPnP worked), el
 
 ### What it feels like
 
-- **Your partner is Marcus or Tessa from Scratch Creek** (chosen in the Multiplayer menu; "auto" makes the host Marcus). Scratch Creek animations: idle, walk, run, crouch, crouch-walk, sitting, sleeping. The head turns before the body; flashlight and items are held with IK.
+- **Pick how you look** in the Multiplayer menu (**Look**): a 3D view you can turn with the mouse, with every pose (standing, walking, running, crouching, sitting, asleep). Choices: Marcus and Tessa (if you have Scratch Creek), the ranger, the waitress and the man in a suit (from Ironbark itself). If your partner lacks your pick (no Scratch Creek), they see you as a similar Ironbark character. **Role** is separate: Marcus (the host in "auto") leads the story.
+- **Animations**: Scratch Creek's when you have it (also on Ironbark's people), otherwise Ironbark's own. The head turns before the body; flashlight and items are held with IK.
 - **3D proximity voice**: full near you, fading out by about 12 m, muffled behind walls; Scratch Creek's speaking icon over the talker. Voice and movement go over UDP.
 - **Shared story**: doors, lights, generator, stove, blinds, items and night progress match for both, and either player can do the tasks. **Personal inventory** and **personal scares**; a death respawns only that player in the tower.
 - **Diner**: fixed sides (Marcus on the bench where food is served, Tessa across); the waitress brings a tray to each of you.
@@ -70,8 +71,9 @@ The code carries an address you can be reached at: external (if UPnP worked), el
 
 | Section / key | What it does |
 |---|---|
-| Character / Survivor | `auto`, `marcus` or `tessa`. |
-| Character / ScratchCreekPath | Scratch Creek data folder, if it was not found automatically. |
+| Character / Survivor | Story role: `auto`, `marcus` or `tessa`. |
+| Character / Look | How you look: `auto`, `marcus`, `tessa`, `ib-ranger`, `ib-waitress`, `ib-suitguy` (set from the menu). |
+| Character / ScratchCreekPath | Scratch Creek data folder, if it was not found automatically; `none` — don't use it. |
 | Session / PlayerName | Name over your character; empty — Steam or Windows name. |
 | Session / Code | Session code for connecting by IP (the same for both). |
 | Network / UPnP | Experimental automatic port opening. |
@@ -86,7 +88,7 @@ The code carries an address you can be reached at: external (if UPnP worked), el
 | `game\winhttp.dll`, `game\doorstop_config.ini`, `game\.doorstop_version`, `game\changelog.txt`, `game\BepInEx\core\*` | BepInEx 5.4.23.5 x64 mod loader, official files, unmodified. |
 | `game\BepInEx\plugins\IronbarkCoop\IronbarkCoop.dll` | The mod. |
 | `game\BepInEx\plugins\IronbarkCoop\Concentus.dll` | Opus voice codec (managed). |
-| `game\BepInEx\plugins\IronbarkCoop\AssetsTools.NET.dll`, `classdata.tpk` | Reads Scratch Creek's characters and animations from your install. |
+| `game\BepInEx\plugins\IronbarkCoop\AssetsTools.NET.dll`, `classdata.tpk` | Reads the characters and animations from your own Ironbark Lookout (and Scratch Creek, if installed). |
 | `game\BepInEx\plugins\IronbarkCoop\System.*.dll` | .NET support libraries for the above. |
 | `licenses\` | This mod's licence, third-party licences and a SHA-256 manifest of every file. |
 | `README.md`, `CHANGELOG.md` | This text and the change history. |
@@ -96,11 +98,11 @@ The code carries an address you can be reached at: external (if UPnP worked), el
 - The log is `BepInEx\LogOutput.log` in the game folder; lines from the mod start with `[Ironbark Cooperative]`.
 - "Version mismatch" — both must have the same game build code and the same mod version.
 - Cannot connect — try the host's Radmin VPN/ZeroTier address, allow the game in the Windows firewall, or forward port 25061 (TCP+UDP).
-- Partner looks like the ranger — Scratch Creek was not found: set `Character / ScratchCreekPath`.
+- Marcus and Tessa are missing from the Look list — Scratch Creek was not found: set `Character / ScratchCreekPath`.
 
 ### Status
 
-Tested automatically on two real copies of the game on one PC (20 test groups: network with packet loss and TCP fallback, menu and join code, avatars and animations, voice, shared story, personal scares and respawn, chores, every campaign scene, continue and reconnect, rides, diner, tower, nights 1–3 played end to end). Human playtests on one PC so far.
+Tested automatically on two real copies of the game on one PC (22 test groups: network with packet loss and TCP fallback, menu and join code, avatars and animations, voice, shared story, personal scares and respawn, chores, every campaign scene, continue and reconnect, rides, diner, tower, nights 1–3 played end to end, the look picker, playing without Scratch Creek). Human playtests on one PC so far.
 
 **Not yet verified:** a session over the internet between two PCs, a live microphone, a full campaign played by people, UPnP on a real router, the Steam connection path.
 
@@ -133,7 +135,7 @@ The build references the game's own assemblies from your install; none of them a
 ### Что нужно
 
 - **Fears to Fathom: Ironbark Lookout** у обоих, **одной версии**. Установщик покажет «код версии игры», и у вас с другом он должен совпасть.
-- **Fears to Fathom: Scratch Creek** у обоих, если хотите видеть друг друга как Маркуса и Тессу. Без неё партнёр выглядит как смотритель парка.
+- **Fears to Fathom: Scratch Creek** — не обязательна. С ней можно выглядеть как Маркус или Тесса. Без неё выбираете одного из людей самой Ironbark (смотритель, официантка из закусочной, мужчина в костюме) — мод берёт их из вашей установленной Ironbark.
 - Windows x64.
 - Одна сеть: локальная, виртуальная (**Radmin VPN**, ZeroTier, Tailscale) или открытый порт на роутере.
 
@@ -169,7 +171,8 @@ The build references the game's own assemblies from your install; none of them a
 
 ### Как это ощущается в игре
 
-- **Партнёр — Маркус или Тесса из Scratch Creek.** Персонаж выбирается в меню мультиплеера («Персонаж: авто / Маркус / Тесса»); в режиме «авто» хост — Маркус, гость — Тесса. Анимации из Scratch Creek: стойка, ходьба, бег, присед, ходьба вприсядку, сидение, сон. Голова поворачивается раньше тела, фонарик и предметы в руках держатся через IK.
+- **Внешность выбираете сами** в меню мультиплеера («Внешность»): 3D-просмотр, модель крутится мышью, можно посмотреть все позы (стоит, идёт, бежит, присел, сидит, спит). На выбор: Маркус и Тесса (если есть Scratch Creek), смотритель, официантка и мужчина в костюме (из самой Ironbark). Если у партнёра нет вашего персонажа (нет Scratch Creek), он увидит похожего из Ironbark. **Роль** — отдельная настройка: сюжет ведёт Маркус (в режиме «авто» это хост).
+- **Анимации** из Scratch Creek, если она есть (и для людей из Ironbark тоже), иначе — из самой Ironbark. Голова поворачивается раньше тела, фонарик и предметы в руках держатся через IK.
 - **Голос в 3D:** в полную силу вблизи, дальше плавно затихает и пропадает примерно через 12 м, за стенами глуше. Над говорящим иконка речи из Scratch Creek. Голос и движение идут по UDP и не «заикаются» при потерях в сети.
 - **Сидящих и спящих видно и слышно:** в машине, в кабинке закусочной, за компьютером — голова сидящего там, где его камера. На стул у компьютера садится один (и через клик по монитору тоже): второму скажут «Это место занято».
 - **Спать ложатся вдвоём, как в Scratch Creek:** кто лёг первым, ждёт на своей половине кровати (Пробел — встать), ночь кончается, когда ляжет второй. Каждый спит на своей половине, партнёр лежит в позе сна из Scratch Creek.
@@ -197,8 +200,9 @@ The build references the game's own assemblies from your install; none of them a
 
 | Раздел / ключ | Что делает |
 |---|---|
-| Character / Survivor | `auto`, `marcus` или `tessa`. |
-| Character / ScratchCreekPath | Папка данных Scratch Creek, если её не нашло автоматически. |
+| Character / Survivor | Роль в сюжете: `auto`, `marcus` или `tessa`. |
+| Character / Look | Внешность: `auto`, `marcus`, `tessa`, `ib-ranger`, `ib-waitress`, `ib-suitguy` (выбирается в меню). |
+| Character / ScratchCreekPath | Папка данных Scratch Creek, если её не нашло автоматически; `none` — не использовать. |
 | Session / PlayerName | Ник над персонажем; пусто — имя Steam или Windows. |
 | Session / Code | Код сессии для подключения по IP (у обоих одинаковый). |
 | Network / UPnP | Экспериментальное автоматическое открытие порта. |
@@ -213,7 +217,7 @@ The build references the game's own assemblies from your install; none of them a
 | `game\winhttp.dll`, `game\doorstop_config.ini`, `game\.doorstop_version`, `game\changelog.txt`, `game\BepInEx\core\*` | Загрузчик модов BepInEx 5.4.23.5 x64, официальные файлы без изменений. |
 | `game\BepInEx\plugins\IronbarkCoop\IronbarkCoop.dll` | Сам мод. |
 | `game\BepInEx\plugins\IronbarkCoop\Concentus.dll` | Голосовой кодек Opus. |
-| `game\BepInEx\plugins\IronbarkCoop\AssetsTools.NET.dll`, `classdata.tpk` | Чтение персонажей и анимаций из вашей установленной Scratch Creek. |
+| `game\BepInEx\plugins\IronbarkCoop\AssetsTools.NET.dll`, `classdata.tpk` | Чтение персонажей и анимаций из вашей установленной Ironbark Lookout (и Scratch Creek, если она есть). |
 | `game\BepInEx\plugins\IronbarkCoop\System.*.dll` | Вспомогательные библиотеки .NET. |
 | `licenses\` | Лицензия мода, лицензии сторонних компонентов и SHA-256 каждого файла. |
 | `README.md`, `CHANGELOG.md` | Этот текст и история изменений. |
@@ -223,11 +227,11 @@ The build references the game's own assemblies from your install; none of them a
 - Лог — `BepInEx\LogOutput.log` в папке игры; строки мода начинаются с `[Ironbark Cooperative]`.
 - «Несовпадение версий» — у обоих должны совпадать код версии игры и версия мода.
 - Не подключается — попробуйте адрес хоста в Radmin VPN/ZeroTier, разрешите игру в брандмауэре Windows или откройте порт 25061 (TCP+UDP).
-- Партнёр выглядит как рейнджер — Scratch Creek не найдена: укажите `Character / ScratchCreekPath`.
+- В списке внешностей нет Маркуса и Тессы — Scratch Creek не найдена: укажите `Character / ScratchCreekPath`.
 
 ### Что проверено и что нет
 
-Проверено автотестами на двух настоящих копиях игры на одном компьютере (20 групп тестов): сеть с потерями и переход на TCP, меню и код подключения, персонажи и анимации, голос, общий сюжет, личные скримеры и возрождение, обязанности, все сцены кампании, продолжение и переподключение, поездки, закусочная, вышка, ночи 1–3 целиком. Живые плейтесты пока — на одном компьютере.
+Проверено автотестами на двух настоящих копиях игры на одном компьютере (22 группы тестов): сеть с потерями и переход на TCP, меню и код подключения, персонажи и анимации, голос, общий сюжет, личные скримеры и возрождение, обязанности, все сцены кампании, продолжение и переподключение, поездки, закусочная, вышка, ночи 1–3 целиком, выбор внешности, игра без Scratch Creek. Живые плейтесты пока — на одном компьютере.
 
 Ещё **не** проверено: игра через интернет между двумя ПК, живой микрофон, полное прохождение людьми, UPnP на реальном роутере, подключение через Steam.
 

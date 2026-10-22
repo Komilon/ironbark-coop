@@ -7,70 +7,123 @@ using UnityEngine.Rendering;
 
 namespace IronbarkCoop
 {
-    // Builds Scratch Creek survivors inside Ironbark from the local pack, extracting it from the player's own
-    // Scratch Creek install on first run. Everything stays on this computer.
+    // Builds the partner's body inside Ironbark from local packs: Scratch Creek's survivors (from the player's own
+    // Scratch Creek install, when there is one) and Ironbark's own people (from the game itself, always). Both are
+    // read once on first run and cached on this computer; nothing is downloaded or shipped.
     internal static class ScRuntime
     {
+        // Scratch Creek's pack (null without Scratch Creek) and Ironbark's own people.
         public static ScPack Pack { get; private set; }
+        public static ScPack IronbarkPack { get; private set; }
         public static string State { get; private set; } = "not started";
-        static readonly Dictionary<int, Texture2D> textures = new Dictionary<int, Texture2D>();
+        static readonly Dictionary<(ScPack, int), Texture2D> textures = new Dictionary<(ScPack, int), Texture2D>();
         static readonly Dictionary<string, GameObject> templates = new Dictionary<string, GameObject>();
-        static volatile ScPack loaded;
+        static volatile ScPack loaded, loadedIronbark;
+        static volatile bool finished;
         static bool started;
 
         public static string CachePath => Path.Combine(BepInEx.Paths.CachePath, "IronbarkCoop", "scratch-creek-" + ScPack.FormatVersion + ".bin");
+        static string IronbarkCachePath => Path.Combine(BepInEx.Paths.CachePath, "IronbarkCoop", "ironbark-" + ScPack.FormatVersion + ".bin");
         static string PluginDir => Path.GetDirectoryName(typeof(ScRuntime).Assembly.Location);
+
+        // Every look a player can pick: id, name, female, from Scratch Creek.
+        internal sealed class Look { public string Id, Russian, English; public bool Female, ScratchCreek; }
+        internal static readonly Look[] AllLooks = {
+            new Look { Id = "marcus", Russian = "Маркус", English = "Marcus", ScratchCreek = true },
+            new Look { Id = "tessa", Russian = "Тесса", English = "Tessa", Female = true, ScratchCreek = true },
+            new Look { Id = "ib-ranger", Russian = "Смотритель", English = "Ranger" },
+            new Look { Id = "ib-waitress", Russian = "Официантка", English = "Waitress", Female = true },
+            new Look { Id = "ib-suitguy", Russian = "Мужчина в костюме", English = "Man in a suit" } };
 
         // Starts loading (or extracting) on a worker thread; Unity objects are built later on the main thread.
         public static void Begin(string configuredPath)
         {
             if (started) return;
             started = true;
+            string ironbarkData = Application.dataPath;
             new Thread(() =>
             {
+                try { loadedIronbark = LoadPack(IronbarkCachePath, () => ScExtractor.ExtractIronbark(ironbarkData, Path.Combine(PluginDir, "classdata.tpk"), message => Plugin.LogFromThread("IB " + message))); }
+                catch (Exception ex) { Plugin.LogFromThread("IB_PACK_FAILED " + ex); }
                 try
                 {
-                    if (File.Exists(CachePath))
-                    {
-                        using (var fs = File.OpenRead(CachePath)) loaded = ScPack.Read(fs);
-                        State = "cache";
-                        return;
-                    }
                     string data = FindScratchCreek(configuredPath);
-                    if (data == null) { State = "Scratch Creek not found"; return; }
-                    State = "extracting";
-                    var pack = ScExtractor.Extract(data, Path.Combine(PluginDir, "classdata.tpk"), message => Plugin.LogFromThread("SC " + message));
-                    Directory.CreateDirectory(Path.GetDirectoryName(CachePath));
-                    using (var fs = File.Create(CachePath)) pack.Write(fs);
-                    loaded = pack;
-                    State = "extracted";
+                    if (configuredPath != "none" && (data != null || File.Exists(CachePath)))
+                        loaded = LoadPack(CachePath, () => ScExtractor.Extract(data, Path.Combine(PluginDir, "classdata.tpk"), message => Plugin.LogFromThread("SC " + message)));
+                    State = loaded != null ? "Scratch Creek + Ironbark people" : "Ironbark people (no Scratch Creek)";
                 }
-                catch (Exception ex) { State = "failed: " + ex.Message; Plugin.LogFromThread("SC_FAILED " + ex); }
-            }) { IsBackground = true, Name = "IronbarkCoop Scratch Creek import" }.Start();
+                catch (Exception ex) { State = "Scratch Creek failed: " + ex.Message; Plugin.LogFromThread("SC_FAILED " + ex); }
+                finished = true;
+            }) { IsBackground = true, Name = "IronbarkCoop character import" }.Start();
+        }
+
+        static ScPack LoadPack(string cache, Func<ScPack> extract)
+        {
+            if (File.Exists(cache)) using (var fs = File.OpenRead(cache)) return ScPack.Read(fs);
+            var pack = extract();
+            Directory.CreateDirectory(Path.GetDirectoryName(cache));
+            using (var fs = File.Create(cache)) pack.Write(fs);
+            return pack;
         }
 
         public static bool Ready
         {
             get
             {
-                if (Pack == null && loaded != null)
+                if (finished && Pack == null && IronbarkPack == null && (loaded != null || loadedIronbark != null))
                 {
                     Pack = loaded;
-                    var icon = Pack.Textures.FindIndex(t => t.Name == "talking-icon");
+                    IronbarkPack = loadedIronbark;
+                    var icon = Pack != null ? Pack.Textures.FindIndex(t => t.Name == "talking-icon") : -1;
                     if (icon >= 0)
                     {
-                        var texture = Texture(icon);
+                        var texture = Texture(Pack, icon);
                         if (texture) TalkingIcon.IconSprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f), texture.width);
                     }
-                    Plugin.Log("SC_READY " + State + " characters=" + Pack.Characters.Count + " clips=" + Pack.Clips.Count);
+                    Plugin.Log("SC_READY " + State + " scratchCreek=" + (Pack != null ? Pack.Characters.Count + "/" + Pack.Clips.Count : "-")
+                        + " ironbark=" + (IronbarkPack != null ? IronbarkPack.Characters.Count + "/" + IronbarkPack.Clips.Count : "-"));
                 }
-                return Pack != null;
+                return Pack != null || IronbarkPack != null;
             }
         }
+
+        public static bool HasScratchCreek => Ready && Pack != null && Pack.Find("marcus") != null;
+
+        // Looks this player can show (in the pick order).
+        public static List<Look> Available()
+        {
+            var list = new List<Look>();
+            if (!Ready) return list;
+            foreach (var look in AllLooks)
+                if ((look.ScratchCreek ? Pack : IronbarkPack)?.Find(look.Id) != null) list.Add(look);
+            return list;
+        }
+
+        public static Look Info(string id) => Array.Find(AllLooks, l => l.Id == id);
+
+        // The look to build for a player: what they picked if this computer has it, otherwise a look of the same kind
+        // that it has (Scratch Creek's survivors first). "auto"/null follows the story role.
+        public static string ResolveLook(string look, string role)
+        {
+            var available = Available();
+            if (!string.IsNullOrEmpty(look) && look != "auto" && available.Exists(l => l.Id == look)) return look;
+            bool female = !string.IsNullOrEmpty(look) && look != "auto" && Info(look) != null ? Info(look).Female : role == "tessa";
+            foreach (var id in female ? new[] { "tessa", "ib-waitress" } : new[] { "marcus", "ib-ranger", "ib-suitguy" })
+                if (available.Exists(l => l.Id == id)) return id;
+            return available.Count > 0 ? available[0].Id : null;
+        }
+
+        public static bool IsFemale(string look) => Info(look)?.Female ?? false;
+
+        // A clip by Scratch Creek name: Scratch Creek's own when the player has it (it animates any humanoid),
+        // otherwise Ironbark's stand-in under the same name.
+        public static ScClip Clip(string name) => Pack?.Clip(name) ?? IronbarkPack?.Clip(name);
 
         static string FindScratchCreek(string configured)
         {
             const string folder = "Fears to Fathom - Scratch Creek", data = "Fears to Fathom - Scratch Creek_Data";
+            // "none": play with Ironbark's own people even when Scratch Creek is installed.
+            if (configured == "none") return null;
             var candidates = new List<string>();
             if (!string.IsNullOrEmpty(configured)) { candidates.Add(configured); candidates.Add(Path.Combine(configured, data)); }
             try
@@ -97,11 +150,11 @@ namespace IronbarkCoop
             return null;
         }
 
-        public static Texture2D Texture(int index)
+        public static Texture2D Texture(ScPack pack, int index)
         {
-            if (index < 0 || Pack == null || index >= Pack.Textures.Count) return null;
-            if (textures.TryGetValue(index, out var cached)) return cached;
-            var t = Pack.Textures[index];
+            if (index < 0 || pack == null || index >= pack.Textures.Count) return null;
+            if (textures.TryGetValue((pack, index), out var cached)) return cached;
+            var t = pack.Textures[index];
             Texture2D texture = null;
             try
             {
@@ -110,20 +163,22 @@ namespace IronbarkCoop
                 texture.Apply(false, true);
             }
             catch (Exception ex) { Plugin.Log("SC_TEXTURE_FAILED " + t.Name + " " + ex.Message); }
-            textures[index] = texture;
+            textures[(pack, index)] = texture;
             return texture;
         }
 
-        // A hidden, ready-to-clone character; null when the pack is unavailable.
+        // A hidden, ready-to-clone body for a look id; null when this computer does not have it.
         public static GameObject Template(string id)
         {
-            if (!Ready) return null;
+            if (!Ready || string.IsNullOrEmpty(id)) return null;
             if (templates.TryGetValue(id, out var existing) && existing) return existing;
-            var character = Pack.Find(id);
+            var info = Info(id);
+            var pack = info != null && !info.ScratchCreek ? IronbarkPack : Pack;
+            var character = pack?.Find(id);
             if (character == null) return null;
             try
             {
-                var root = Build(character);
+                var root = Build(character, pack);
                 root.SetActive(false);
                 UnityEngine.Object.DontDestroyOnLoad(root);
                 templates[id] = root;
@@ -135,7 +190,7 @@ namespace IronbarkCoop
         static Vector3 V(float[] a) => new Vector3(a[0], a[1], a[2]);
         static Quaternion Q(float[] a) => new Quaternion(a[0], a[1], a[2], a[3]);
 
-        static GameObject Build(ScCharacter character)
+        static GameObject Build(ScCharacter character, ScPack pack)
         {
             var bones = new Transform[character.Bones.Count];
             for (int i = 0; i < bones.Length; i++)
@@ -149,7 +204,7 @@ namespace IronbarkCoop
             }
             var root = bones[0].gameObject;
             root.name = "SC " + character.DisplayName;
-            foreach (var m in character.Meshes) Renderer(m, bones);
+            foreach (var m in character.Meshes) Renderer(m, bones, pack);
             var animator = root.AddComponent<Animator>();
             animator.avatar = Avatar(character, root, bones);
             animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
@@ -157,7 +212,7 @@ namespace IronbarkCoop
             return root;
         }
 
-        static void Renderer(ScMesh m, Transform[] bones)
+        static void Renderer(ScMesh m, Transform[] bones, ScPack pack)
         {
             var mesh = new Mesh { name = "SC " + m.Name };
             var layout = new List<VertexAttributeDescriptor>();
@@ -212,7 +267,7 @@ namespace IronbarkCoop
             renderer.sharedMaterials = m.Materials.ConvertAll(x =>
             {
                 var material = new Material(standard) { name = "SC " + x.Name };
-                var main = Texture(x.MainTexture);
+                var main = Texture(pack, x.MainTexture);
                 if (main) material.mainTexture = main;
                 material.color = new Color(x.Color[0], x.Color[1], x.Color[2], x.Color[3]);
                 material.SetFloat("_Glossiness", x.Glossiness);
@@ -285,7 +340,7 @@ namespace IronbarkCoop
             foreach (Motion m in Enum.GetValues(typeof(Motion))) { weights[m] = m == Motion.Idle ? 1f : 0f; times[m] = 0f; }
         }
 
-        internal void Bind(Motion motion, string name) => Bind(motion, ScRuntime.Pack.Clip(name));
+        internal void Bind(Motion motion, string name) => Bind(motion, ScRuntime.Clip(name));
         public bool Has(Motion motion) => clips.ContainsKey(motion);
 
         // A clip recorded from another humanoid (muscle space is shared between humanoid avatars).
