@@ -16,6 +16,7 @@ namespace IronbarkCoop
         GameObject stage, body;
         Camera view;
         RenderTexture target;
+        Material floorMaterial;
         ScPoseAnimator animator;
         string shown;
         float yaw = 20f;
@@ -59,9 +60,9 @@ namespace IronbarkCoop
             floor.transform.SetParent(stage.transform, false);
             floor.transform.localScale = new Vector3(1.4f, 0.01f, 1.4f);
             floor.layer = StageLayer;
-            var material = new Material(Shader.Find("Standard")) { color = new Color(0.12f, 0.12f, 0.13f) };
-            material.SetFloat("_Glossiness", 0.1f);
-            floor.GetComponent<Renderer>().sharedMaterial = material;
+            floorMaterial = new Material(Shader.Find("Standard")) { color = new Color(0.12f, 0.12f, 0.13f) };
+            floorMaterial.SetFloat("_Glossiness", 0.1f);
+            floor.GetComponent<Renderer>().sharedMaterial = floorMaterial;
         }
 
         void Light(Vector3 euler, float intensity, Color color)
@@ -85,7 +86,8 @@ namespace IronbarkCoop
         void OnDestroy()
         {
             if (stage) Destroy(stage);
-            if (target) target.Release();
+            if (target) { target.Release(); Destroy(target); }
+            if (floorMaterial) Destroy(floorMaterial);
         }
 
         void Update()
