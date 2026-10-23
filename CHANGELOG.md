@@ -2,6 +2,20 @@
 
 Both players must use the same mod version. / У обоих игроков должна быть одна версия мода.
 
+## 0.6.1 — radio talks: back in the talk at once, the camera turns to the speaker / разговоры по рации
+
+Works together with 0.6.0 (same protocol), but update both for the fixes. / Совместима с 0.6.0, но для исправлений обновитесь оба.
+
+**English**
+- Coming back into the tower during a partner's radio talk shows the current line (and the open question, rejoining the vote if not answered yet) at once, instead of waiting for the next line.
+- Closing the phone (Esc) during a talk puts the current line and question back at once.
+- The listener's camera turns smoothly to whoever speaks (the radio for the radio voice, the partner for the answers), as in the game's own talks.
+
+**Русский**
+- Если вернуться в вышку во время разговора партнёра по рации, текущая реплика (и открытый вопрос — можно снова голосовать, если ответа ещё нет) появляется сразу, а не со следующей фразы.
+- После закрытия телефона (Esc) во время разговора текущая реплика и вопрос возвращаются сразу.
+- Камера слушающего плавно поворачивается к говорящему (к рации, когда говорит голос по рации, к партнёру, когда отвечают), как в диалогах самой игры.
+
 ## 0.6.0 — playtest fixes: the next night, the morning, flashlights, spray / исправления по плейтесту
 
 **English**

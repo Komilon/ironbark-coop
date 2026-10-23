@@ -37,6 +37,11 @@ namespace IronbarkCoop
         ListenPanel panel;
         int listenSerial = -1, listenMine = -1, listenTheirs = -1;
         bool listening, choosing, awayThisTalk;
+        // The talk's current line and open question, kept while away (out of the tower, the phone open), so whoever
+        // comes back sees where the talk is at once instead of waiting for its next line.
+        bool talkLive;
+        string liveSpeaker, liveLine;
+        Packet liveOptions;
         public int LinesHeard { get; private set; }
         public string Debug => (talking ? "speaker" : listening ? "listener" : "idle") + "/s" + serial + "/my" + myVote + "/their" + partnerVote + "/joined" + partnerJoined + "/lines" + LinesHeard + "/choosing" + choosing + "/l" + listenMine + "," + listenTheirs + "/line" + (panel != null ? panel.LineInfo : "-");
 
@@ -62,8 +67,9 @@ namespace IronbarkCoop
         string MyColor => plugin.MyCharacter == "tessa" ? TessaColor : MarcusColor;
         string PartnerColor => (plugin.PartnerCharacter ?? (plugin.MyCharacter == "tessa" ? "marcus" : "tessa")) == "tessa" ? TessaColor : MarcusColor;
 
-        public void SceneLoaded() { ResetSpeaker(); CloseListener(false); panel = null; }
-        public void PartnerLeft() { partnerJoined = false; partnerAnswered = true; CloseListener(true); }
+        public void SceneLoaded() { ResetSpeaker(); CloseListener(false); panel = null; ForgetLiveTalk(); }
+        public void PartnerLeft() { partnerJoined = false; partnerAnswered = true; CloseListener(true); ForgetLiveTalk(); }
+        void ForgetLiveTalk() { talkLive = false; liveSpeaker = liveLine = null; liveOptions = null; }
 
         void ResetSpeaker() { optionIds = null; myVote = partnerVote = -1; partnerJoined = partnerAnswered = false; plainTexts.Clear(); }
 
@@ -236,6 +242,8 @@ namespace IronbarkCoop
 
         void ListenTick()
         {
+            TurnTick();
+            if (!listening && talkLive && !awayThisTalk && CanListen && !GameManager.instance.isPaused) Rejoin();
             if (!listening) return;
             if (!CanListen && !choosing) { CloseListener(true); return; }
             var gm = GameManager.instance;
@@ -248,6 +256,15 @@ namespace IronbarkCoop
                 wasPaused = false;
                 // Closing the phone locks and hides the cursor; the answers still need it.
                 if (choosing) gm.ShowCursor();
+                // The panel copied from the game's dialogue view empties its line when shown again: put the talk's
+                // current line and question back.
+                if (liveLine != null) panel?.ShowLine(liveSpeaker, liveLine);
+                if (choosing && liveOptions != null && liveOptions.changes != null && liveOptions.arg == listenSerial && panel != null)
+                {
+                    panel.ShowOptions(liveOptions.changes, liveOptions.bits, Pick);
+                    panel.Mark(listenMine, listenTheirs, MyColor, PartnerColor);
+                }
+                Plugin.Log("TALK_RESTORED_AFTER_PHONE line=" + (liveLine != null));
             }
             if (choosing)
             {
@@ -265,25 +282,23 @@ namespace IronbarkCoop
             switch (packet.code)
             {
                 case "line":
+                    talkLive = true; liveSpeaker = packet.build; liveLine = packet.name; liveOptions = null;
                     if (!CanListen) return;
                     EnsurePanel();
                     listening = true;
                     LinesHeard++;
                     panel.ShowLine(packet.build, packet.name);
+                    TurnTo(RadioPoint());
                     Plugin.Log("TALK_LINE_SHOWN " + panel.LineInfo + " " + packet.name);
                     break;
                 case "opts":
+                    talkLive = true; liveOptions = packet;
                     if (!CanListen || packet.changes == null)
                     {
                         plugin.Send(new Packet { kind = "dlg", code = "skip", scene = Scene, arg = packet.arg });
                         return;
                     }
-                    EnsurePanel();
-                    listening = true;
-                    listenSerial = packet.arg; listenMine = listenTheirs = -1;
-                    panel.ShowOptions(packet.changes, packet.bits, Pick);
-                    if (Bits(packet.bits) >= 2) BeginChoosing();
-                    plugin.Send(new Packet { kind = "dlg", code = "join", scene = Scene, arg = packet.arg });
+                    ShowQuestion(packet);
                     break;
                 case "vote":
                     if (packet.arg != listenSerial || !choosing) return;
@@ -291,11 +306,13 @@ namespace IronbarkCoop
                     panel.Mark(listenMine, listenTheirs, MyColor, PartnerColor);
                     break;
                 case "chosen":
+                    if (liveOptions != null && liveOptions.arg == packet.arg) liveOptions = null;
                     if (packet.arg != listenSerial) return;
                     EndChoosing();
                     panel?.HideOptions();
                     break;
                 case "end":
+                    ForgetLiveTalk();
                     awayThisTalk = false;
                     CloseListener(true);
                     var tower = Tower;
@@ -310,6 +327,69 @@ namespace IronbarkCoop
                     try { method.Invoke(voice, new object[] { packet.code2 }); } catch (Exception ex) { Plugin.Log("TALK_VO_FAILED " + ex.Message); }
                     break;
             }
+        }
+
+        void ShowQuestion(Packet packet)
+        {
+            EnsurePanel();
+            listening = true;
+            listenSerial = packet.arg; listenMine = listenTheirs = -1;
+            panel.ShowOptions(packet.changes, packet.bits, Pick);
+            if (Bits(packet.bits) >= 2) BeginChoosing();
+            plugin.Send(new Packet { kind = "dlg", code = "join", scene = Scene, arg = packet.arg });
+            TurnTo(PartnerHead());
+        }
+
+        // Back in the tower (or the phone closed) while the talk goes on: its current line, and its question if still
+        // open (the vote is joined again if the speaker has not answered yet).
+        void Rejoin()
+        {
+            EnsurePanel();
+            listening = true;
+            if (liveLine != null) { panel.ShowLine(liveSpeaker, liveLine); TurnTo(RadioPoint()); }
+            if (liveOptions != null && liveOptions.changes != null) ShowQuestion(liveOptions);
+            Plugin.Log("TALK_REJOINED line=" + (liveLine != null) + " question=" + (liveOptions != null));
+        }
+
+        // ---- the camera turns to whoever speaks, as in the game's own talks ----
+
+        Vector3? turnTarget;
+        float turnStart;
+        Quaternion turnFromYaw;
+        float turnFromPitch;
+
+        Vector3? RadioPoint() { var tower = Tower; return tower && tower.radioCollider ? tower.radioCollider.transform.position : (Vector3?)null; }
+        Vector3? PartnerHead() => plugin.PartnerPresent && PartnerNearRadio() ? plugin.PartnerPosition + Vector3.up * 1.55f : RadioPoint();
+
+        void TurnTo(Vector3? point)
+        {
+            var fps = GameManager.instance ? GameManager.instance.firstPersonController : null;
+            if (!point.HasValue || !fps || !fps.gameObject.activeInHierarchy || !fps.playerCamera) return;
+            turnTarget = point;
+            turnStart = Time.unscaledTime;
+            turnFromYaw = fps.transform.rotation;
+            turnFromPitch = fps.rotationX;
+            if (plugin.Lab) Plugin.Log("TALK_TURN to " + point.Value.ToString("F1"));
+        }
+
+        void TurnTick()
+        {
+            if (!turnTarget.HasValue) return;
+            var gm = GameManager.instance;
+            var fps = gm ? gm.firstPersonController : null;
+            if (!fps || !fps.gameObject.activeInHierarchy || !fps.playerCamera || gm.isPaused || !listening) { turnTarget = null; return; }
+            var to = turnTarget.Value - fps.playerCamera.transform.position;
+            if (to.sqrMagnitude < 0.04f) { turnTarget = null; return; }
+            float t = Mathf.Clamp01((Time.unscaledTime - turnStart) / 0.7f);
+            float ease = t * t * (3f - 2f * t);
+            var flat = new Vector3(to.x, 0f, to.z);
+            var yaw = flat.sqrMagnitude > 0.0001f ? Quaternion.LookRotation(flat) : turnFromYaw;
+            float pitch = Mathf.Clamp(-Mathf.Atan2(to.y, flat.magnitude) * Mathf.Rad2Deg, -80f, 80f);
+            fps.transform.rotation = Quaternion.Slerp(turnFromYaw, yaw, ease);
+            fps.rotationX = Mathf.Lerp(turnFromPitch, pitch, ease);
+            // Choosing an answer switches the controller off; the camera's tilt is set here then.
+            fps.playerCamera.transform.localRotation = Quaternion.Euler(fps.rotationX, 0f, fps.playerCamera.transform.localEulerAngles.z);
+            if (t >= 1f) turnTarget = null;
         }
 
         void Pick(int index)
