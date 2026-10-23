@@ -12,7 +12,7 @@ namespace IronbarkCoop
     public sealed class Packet
     {
         public string kind, scene, code, build;
-        public const int Protocol = 7;
+        public const int Protocol = 8;
         public int version = Protocol;
         public Vector3 position;
         public Quaternion rotation;
@@ -64,6 +64,8 @@ namespace IronbarkCoop
         {
             if (Applying || key != "StartSeq" || value <= 1 || value > 8) return;
             Plugin.NextNight = value;
+            // Our own story has moved on: a night remembered from following the partner earlier is out of date.
+            Plugin.PendingNight = 0;
             Plugin.Log("NEXT_NIGHT " + value);
             if (Plugin.Instance && Plugin.Instance.Ready) Plugin.Instance.Send(new Packet { kind = "next-night", arg = value });
         }
@@ -101,7 +103,7 @@ namespace IronbarkCoop
         }
     }
 
-    [BepInPlugin("astra.ironbark.coop", "Ironbark Cooperative", "0.6.1")]
+    [BepInPlugin("astra.ironbark.coop", "Ironbark Cooperative", "0.7.0")]
     public sealed class Plugin : BaseUnityPlugin
     {
         internal static Plugin Instance;
@@ -118,6 +120,8 @@ namespace IronbarkCoop
         internal RadioTalk Talk;
         internal BedSync Beds;
         internal DreamSync Dream;
+        internal TripSync Trip;
+        internal NightErrand Errand;
         internal SleepSync Sleep;
         bool partnerSit;
         int sceneEpoch;
@@ -204,6 +208,8 @@ namespace IronbarkCoop
             Talk = new RadioTalk(this);
             Beds = new BedSync(this);
             Dream = new DreamSync(this);
+            Trip = new TripSync(this);
+            Errand = new NightErrand(this);
             Sleep = new SleepSync(this);
             Items.RemoteHeldChanged += held => RefreshHeld();
             harmony = new Harmony("astra.ironbark.coop");
@@ -377,7 +383,7 @@ namespace IronbarkCoop
                 nextSceneSync = Time.unscaledTime + 2f;
                 SendScene();
             }
-            if (avatar != null && avatar.Active) avatar.SetSpeaking(voice != null && voice.Speaking);
+            if (avatar != null && avatar.Active) avatar.SetSpeaking(voice != null && voice.Speaking && !partnerDreaming);
             if (labWalkTarget.HasValue && GameManager.instance && GameManager.instance.playerFP)
             {
                 // Lab-only scripted walk at the game's walk speed so partner animation can be measured.
@@ -406,6 +412,8 @@ namespace IronbarkCoop
             Talk.Tick();
             Beds.Tick();
             Dream.Tick();
+            Trip.Tick();
+            Errand.Tick();
             Sleep.Tick();
             AnchorSeatedPartner();
             if (authenticated && Time.unscaledTime >= voiceRetryAt)
@@ -424,7 +432,8 @@ namespace IronbarkCoop
                 }
             }
             else if (capture != null) { capture.Dispose(); capture = null; }
-            voice?.SetDream(Dream.Dreaming);
+            voice?.SetDream(Dream.Dreaming, Dream.Dreaming ? Dream.HearingAt(targetPosition + Vector3.up * 1.6f) : 1f);
+            voice?.SetSleepTalk(partnerDreaming && PartnerPresent);
             voice?.Update(avatar != null ? avatar.HeadPosition : targetPosition + Vector3.up * 1.6f, authenticated && (PartnerPresent || Dream.Dreaming));
             Bridge();
         }
@@ -484,10 +493,16 @@ namespace IronbarkCoop
             if (p.kind == "tower" || p.kind == "screen") { Tower.Receive(p); return; }
             if (p.kind == "fx") { Hands.Receive(p); return; }
             if (p.kind == "dlg") { Talk.Receive(p); return; }
+            if (p.kind == "potty") { OuthouseSync.Receive(p); return; }
+            if (p.kind == "trip") { Trip.Receive(p); return; }
+            if (p.kind == "supper") { SupperSync.Receive(p); return; }
+            if (p.kind == "errand") { Errand.Receive(p); return; }
             if (p.kind == "react") { if (p.scene == SceneManager.GetActiveScene().name && avatar != null && avatar.Active) { avatar.React(); Logger.LogInfo("SCARE_REMOTE " + p.code); } return; }
             if (p.kind == "scene")
             {
                 // Whoever advanced to a newer story scene leads; on connect the host's scene wins.
+                // Staying in the tower while the partner is at the campfire: their scene is not followed there.
+                if (Trip.HoldsScene(p.scene)) { sceneEpoch = Math.Max(sceneEpoch, p.arg); return; }
                 bool newer = p.arg > sceneEpoch || p.code == "force";
                 if (!newer) return;
                 sceneEpoch = p.arg;
@@ -499,14 +514,19 @@ namespace IronbarkCoop
                 {
                     loadingScene = p.scene;
                     // Join the partner's night, the same way the main menu's Continue does.
-                    if (int.TryParse(p.name, out int night) && night >= 1 && night <= 8) { StartSeqPatch.Applying = true; PlayerPrefs.SetInt("StartSeq", night); StartSeqPatch.Applying = false; PendingNight = night; }
+                    // The night matters for the tower (and the evening card before it). Followed elsewhere (the campfire),
+                    // the partner reports whatever their tower left in the save (night 1), which must not be applied later.
+                    if (p.scene != "Watchtower" && p.scene != "Seq 4 Intro") PendingNight = 0;
+                    else if (int.TryParse(p.name, out int night) && night >= 1 && night <= 8) { StartSeqPatch.Applying = true; PlayerPrefs.SetInt("StartSeq", night); StartSeqPatch.Applying = false; PendingNight = night; }
                     PlayerPrefs.SetInt("FromMenu", 1);
                     Logger.LogInfo("SCENE_FOLLOW " + p.scene + " night=" + p.name + " epoch=" + p.arg + " StartSeq=" + PlayerPrefs.GetInt("StartSeq", -1));
                     SceneManager.LoadSceneAsync(p.scene);
                 }
                 return;
             }
-            if (p.kind != "pose" || p.scene != SceneManager.GetActiveScene().name) return;
+            if (p.kind != "pose") return;
+            // The partner is in another scene (one went to the campfire alone): not here, seen or heard.
+            if (p.scene != SceneManager.GetActiveScene().name) { if (avatar != null && avatar.Active) { avatar.Active = false; partnerSeat = null; Logger.LogInfo("PARTNER_ELSEWHERE " + p.scene); } return; }
             if (!Finite(p.position.x) || !Finite(p.position.y) || !Finite(p.position.z)) return;
             if (!Finite(p.rotation.x) || !Finite(p.rotation.y) || !Finite(p.rotation.z) || !Finite(p.rotation.w)) return;
             if (!Finite(p.pitch)) return;
@@ -518,6 +538,7 @@ namespace IronbarkCoop
             partnerPitch = Mathf.Clamp(p.pitch, -90f, 90f); partnerCrouch = p.crouch; partnerLight = p.light;
             Rides.ReceivePose(p);
             partnerSit = p.sit; partnerSeat = p.active ? p.seat : null; partnerBodyYaw = p.steer; partnerEye = p.eye;
+            partnerDreaming = p.code2 == "dream";
             if (partnerHand != p.hand || !heldShown) { partnerHand = p.hand; RefreshHeld(); }
             Diner.PartnerSeatChanged(partnerSeat);
             avatar.SetPose(targetPosition, targetRotation, partnerPitch, partnerCrouch, partnerLight, Finite(p.time) ? p.time : 0f, p.torch, p.sit);
@@ -569,7 +590,11 @@ namespace IronbarkCoop
         }
 
         Vector3 lastFeet;
-        bool hasLastFeet;
+        bool hasLastFeet, partnerDreaming;
+        internal bool PartnerDreaming => authenticated && partnerDreaming;
+        internal float VoiceGain => voice != null ? voice.Gain : -1f;
+        internal GameObject PartnerRoot => avatar != null ? avatar.Root : null;
+        internal float PartnerHipsGap => avatar != null && avatar.Active ? avatar.LyingHipsGap : -1f;
         float partnerBodyYaw;
         string partnerSeat, partnerHand;
         Vector3 partnerEye;
@@ -581,6 +606,8 @@ namespace IronbarkCoop
             partnerSeat = null; partnerSit = false; partnerHand = null; heldShown = null;
             Diner?.PartnerSeatChanged(null);
             Talk?.PartnerLeft();
+            Trip?.PartnerLeft();
+            Errand?.PartnerLeft();
         }
 
         // What the partner's avatar holds: a shared story item they took, or whatever their hand holds by scene path
@@ -673,6 +700,9 @@ namespace IronbarkCoop
             Talk.SceneLoaded();
             Beds.SceneLoaded();
             Dream.SceneLoaded();
+            Trip.SceneLoaded();
+            Errand.SceneLoaded();
+            SupperSync.SceneLoaded();
             Sleep.SceneLoaded();
             hasLastFeet = false;
             if (authenticated) SendScene();
@@ -767,6 +797,8 @@ namespace IronbarkCoop
                     if (p.kind == "rv-dump") LabScene.DumpRv(Path.Combine(bridgeDir, "rv.json"));
                     if (p.kind == "bed-dump") LabScene.DumpBed(Path.Combine(bridgeDir, "bed.json"));
                     if (p.kind == "go-dump") LabScene.DumpObject(Path.Combine(bridgeDir, "go.txt"), p.code);
+                    if (p.kind == "probe") LabProbe.Run(Path.Combine(bridgeDir, "probe.txt"), p.code ?? "", this);
+                    if (p.kind == "lab-wet") Logger.LogInfo("LAB_WET " + LabScene.Wet(p.arg));
                     if (p.kind == "colliders-near") { var near = new System.Collections.Generic.List<string>(); var mask = GameManager.instance && GameManager.instance.watchTowerManager ? GameManager.instance.watchTowerManager.layerMask.value : ~0; foreach (var c in Physics.OverlapSphere(p.position, p.pitch > 0f ? p.pitch : 1.5f, ~0, QueryTriggerInteraction.Collide)) near.Add(ItemSync.PathOf(c.transform) + " type=" + c.GetType().Name + " layer=" + LayerMask.LayerToName(c.gameObject.layer) + " inMask=" + ((mask & (1 << c.gameObject.layer)) != 0) + " trigger=" + c.isTrigger + " enabled=" + c.enabled + " center=" + c.bounds.center.ToString("F2") + " size=" + c.bounds.size.ToString("F2")); File.WriteAllLines(Path.Combine(bridgeDir, "colliders.txt"), near); }
                     if (p.kind == "story-keys") File.WriteAllLines(Path.Combine(bridgeDir, "story-keys.txt"), Story.LabEntries(p.code ?? ""));
                     if (p.kind == "tower-collider" && GameManager.instance && GameManager.instance.watchTowerManager && AccessTools.Field(typeof(WatchTowerManager), p.code)?.GetValue(GameManager.instance.watchTowerManager) is GameObject colliderOwner && colliderOwner.TryGetComponent<Collider>(out var labCollider)) labCollider.enabled = p.active;
@@ -786,6 +818,9 @@ namespace IronbarkCoop
                     if (p.kind == "ui-dump") LabUi.Dump(Path.Combine(bridgeDir, "ui.json"));
                     if (p.kind == "dlg-dump") LabScene.DumpDialogue(Path.Combine(bridgeDir, p.code == "computer" ? "computer.json" : "dialogue.json"));
                     if (p.kind == "dlg-pick") Talk.LabPick(p.arg);
+                    if (p.kind == "trip-pick") Trip.LabPick(p.arg);
+                    if (p.kind == "errand-begin") Errand.LabBegin();
+                    if (p.kind == "lab-eat-dish" && GameManager.instance && GameManager.instance.watchTowerManager && GameManager.instance.watchTowerManager.casserole) { var dish = GameManager.instance.watchTowerManager.casserole; dish.isEating = false; dish.Eat(); Logger.LogInfo("LAB_EAT_DISH " + dish.finishedInt); }
                     if (p.kind == "lab-race") TowerChairPatch.LabRace = p.active;
                     if (p.kind == "lab-take-torch" && GameManager.instance && GameManager.instance.itemPickUp && !GameManager.instance.itemPickUp.inHandFlashlight)
                     {

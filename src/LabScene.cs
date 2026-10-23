@@ -108,6 +108,19 @@ namespace IronbarkCoop
             return "ok";
         }
 
+        // Wet patches as poured gas leaves them (the stream's collision sub-emitter): emitted into the first active can's
+        // "wet" system on the floor around the player.
+        public static string Wet(int count)
+        {
+            var gas = UnityEngine.Object.FindObjectOfType<Gas>();
+            var player = GameManager.instance && GameManager.instance.playerFP ? GameManager.instance.playerFP.transform : null;
+            if (!gas || !gas.gasPsWet || !player) return "no can";
+            if (!Physics.Raycast(player.position, Vector3.down, out var floor, 5f, ~0, QueryTriggerInteraction.Ignore)) return "no floor";
+            for (int i = 0; i < Math.Max(1, count); i++)
+                gas.gasPsWet.Emit(new ParticleSystem.EmitParams { position = floor.point + Vector3.up * 0.01f + new Vector3(Mathf.Sin(i) * 0.6f, 0f, Mathf.Cos(i) * 0.6f), startSize = 0.3f, startLifetime = 5000000f, applyShapeToPosition = false }, 1);
+            return "ok " + gas.gasPsWet.particleCount;
+        }
+
         // "Type.field=value" on the first live object of that type.
         public static string Set(string code, string value)
         {
@@ -285,6 +298,10 @@ namespace IronbarkCoop
             if (gm.watchTowerManager) { var t3 = gm.watchTowerManager; string F3(string n) => (bool)AccessTools.Field(typeof(WatchTowerManager), n).GetValue(t3) ? "1" : "0"; s += " d3=U" + F3("seq3StandUp1Done") + "C" + F3("seq3CampersDone") + "K" + F3("seq3CheckSmoke") + "V" + F3("seq3StandUp2Done") + "X" + F3("seq3CheckCampersDone") + "S" + (t3.smoke && t3.smoke.activeSelf ? "1" : "0") + "T" + (t3.laceyTrailTrigger && t3.laceyTrailTrigger.activeSelf ? "1" : "0"); }
             if (gm.watchTowerManager) { var t = gm.watchTowerManager; string B(bool b) => b ? "1" : "0"; s += " n1=L" + B(t.isLocked) + "D" + B(t.isDoorOpen) + "G" + B(t.isGeneratorOn) + "R" + B(t.reportDone) + "C" + B(t.firstRadioConversationDone) + "S" + B((bool)AccessTools.Field(typeof(WatchTowerManager), "stoveConvoDone").GetValue(t)) + "W" + B(t.firewoodConvoOnce) + "P" + B(t.canPickUpWood) + "I" + B(t.woodInStove) + "g" + B(t.gasOnWood) + "F" + B(t.fireLit) + "A" + B(t.askAboutReport) + "U" + B(t.seq1UpstairsBlocker && t.seq1UpstairsBlocker.activeSelf) + "b" + System.Array.FindAll(t.towerSunBlinds, x => x.isOpen).Length; }
             if (gm.watchTowerManager && gm.watchTowerManager.woodStorage) s += " woodPile=" + (gm.watchTowerManager.woodStorage.TryGetComponent<Collider>(out var pile) && pile.enabled) + "/" + gm.watchTowerManager.canPickUpWood;
+            if (gm.watchTowerManager && gm.watchTowerManager.casserole) { var dish = gm.watchTowerManager.casserole; s += " dish=" + dish.ingredientsIn + "/" + dish.finishedInt + "/" + (dish.isPickable ? 1 : 0) + "/" + (SupperSync.Baked(dish) ? 1 : 0); }
+            if (gm.watchTowerManager && gm.watchTowerManager.peeStairsBlock) s += " stairBlock=" + gm.watchTowerManager.peeStairsBlock.activeSelf + " shedLight=" + (gm.watchTowerManager.shedLight && gm.watchTowerManager.shedLight.activeSelf);
+            s += " errand=" + plugin.Errand.Debug + " supper=" + SupperSync.Debug + " trip=" + plugin.Trip.Debug + " gasTrail=" + plugin.Hands.TrailPatches + "/" + plugin.Hands.GasPatchesReceived + " potty=" + OuthouseSync.Sent + "/" + OuthouseSync.Applied + " hipsGap=" + plugin.PartnerHipsGap.ToString("F2", CultureInfo.InvariantCulture) + " dreamLight=" + plugin.Dream.LightDebug + " dreamRadius=" + plugin.Dream.Radius.ToString("F0", CultureInfo.InvariantCulture) + " echoes=" + plugin.Dream.Echoes
+                + " voiceGain=" + plugin.VoiceGain.ToString("F2", CultureInfo.InvariantCulture) + " partnerDreaming=" + plugin.PartnerDreaming;
             s += " dream=" + plugin.Dream.Debug + " sleep=" + plugin.Sleep.Debug + " bedHalf=" + plugin.Beds.Shifted + " partnerLying=" + plugin.PartnerLying + " partnerTorch=" + plugin.PartnerTorch + " heldTorchScale=" + plugin.Hands.HeldTorchScale;
             if (Camera.main) s += " camEuler=" + Camera.main.transform.localEulerAngles.ToString("F0").Replace(" ", "");
             s += " calls=" + RemoteCalls.Sent + "/" + RemoteCalls.Applied + " musicFixes=" + plugin.Music.Corrections + " lead=" + plugin.IsStoryLead;

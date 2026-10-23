@@ -43,7 +43,7 @@ namespace IronbarkCoop
         string liveSpeaker, liveLine;
         Packet liveOptions;
         public int LinesHeard { get; private set; }
-        public string Debug => (talking ? "speaker" : listening ? "listener" : "idle") + "/s" + serial + "/my" + myVote + "/their" + partnerVote + "/joined" + partnerJoined + "/lines" + LinesHeard + "/choosing" + choosing + "/l" + listenMine + "," + listenTheirs + "/line" + (panel != null ? panel.LineInfo : "-");
+        public string Debug => (talking ? "speaker" : listening ? "listener" : "idle") + "/s" + serial + "/my" + myVote + "/their" + partnerVote + "/joined" + partnerJoined + "/lines" + LinesHeard + "/choosing" + choosing + "/l" + listenMine + "," + listenTheirs + "/line" + (panel != null ? panel.LineInfo : "-") + "/answers" + (panel != null ? panel.Answers : "-");
 
         public RadioTalk(Plugin plugin) { this.plugin = plugin; }
 
@@ -242,7 +242,6 @@ namespace IronbarkCoop
 
         void ListenTick()
         {
-            TurnTick();
             if (!listening && talkLive && !awayThisTalk && CanListen && !GameManager.instance.isPaused) Rejoin();
             if (!listening) return;
             if (!CanListen && !choosing) { CloseListener(true); return; }
@@ -288,7 +287,6 @@ namespace IronbarkCoop
                     listening = true;
                     LinesHeard++;
                     panel.ShowLine(packet.build, packet.name);
-                    TurnTo(RadioPoint());
                     Plugin.Log("TALK_LINE_SHOWN " + panel.LineInfo + " " + packet.name);
                     break;
                 case "opts":
@@ -337,7 +335,6 @@ namespace IronbarkCoop
             panel.ShowOptions(packet.changes, packet.bits, Pick);
             if (Bits(packet.bits) >= 2) BeginChoosing();
             plugin.Send(new Packet { kind = "dlg", code = "join", scene = Scene, arg = packet.arg });
-            TurnTo(PartnerHead());
         }
 
         // Back in the tower (or the phone closed) while the talk goes on: its current line, and its question if still
@@ -346,50 +343,9 @@ namespace IronbarkCoop
         {
             EnsurePanel();
             listening = true;
-            if (liveLine != null) { panel.ShowLine(liveSpeaker, liveLine); TurnTo(RadioPoint()); }
+            if (liveLine != null) panel.ShowLine(liveSpeaker, liveLine);
             if (liveOptions != null && liveOptions.changes != null) ShowQuestion(liveOptions);
             Plugin.Log("TALK_REJOINED line=" + (liveLine != null) + " question=" + (liveOptions != null));
-        }
-
-        // ---- the camera turns to whoever speaks, as in the game's own talks ----
-
-        Vector3? turnTarget;
-        float turnStart;
-        Quaternion turnFromYaw;
-        float turnFromPitch;
-
-        Vector3? RadioPoint() { var tower = Tower; return tower && tower.radioCollider ? tower.radioCollider.transform.position : (Vector3?)null; }
-        Vector3? PartnerHead() => plugin.PartnerPresent && PartnerNearRadio() ? plugin.PartnerPosition + Vector3.up * 1.55f : RadioPoint();
-
-        void TurnTo(Vector3? point)
-        {
-            var fps = GameManager.instance ? GameManager.instance.firstPersonController : null;
-            if (!point.HasValue || !fps || !fps.gameObject.activeInHierarchy || !fps.playerCamera) return;
-            turnTarget = point;
-            turnStart = Time.unscaledTime;
-            turnFromYaw = fps.transform.rotation;
-            turnFromPitch = fps.rotationX;
-            if (plugin.Lab) Plugin.Log("TALK_TURN to " + point.Value.ToString("F1"));
-        }
-
-        void TurnTick()
-        {
-            if (!turnTarget.HasValue) return;
-            var gm = GameManager.instance;
-            var fps = gm ? gm.firstPersonController : null;
-            if (!fps || !fps.gameObject.activeInHierarchy || !fps.playerCamera || gm.isPaused || !listening) { turnTarget = null; return; }
-            var to = turnTarget.Value - fps.playerCamera.transform.position;
-            if (to.sqrMagnitude < 0.04f) { turnTarget = null; return; }
-            float t = Mathf.Clamp01((Time.unscaledTime - turnStart) / 0.7f);
-            float ease = t * t * (3f - 2f * t);
-            var flat = new Vector3(to.x, 0f, to.z);
-            var yaw = flat.sqrMagnitude > 0.0001f ? Quaternion.LookRotation(flat) : turnFromYaw;
-            float pitch = Mathf.Clamp(-Mathf.Atan2(to.y, flat.magnitude) * Mathf.Rad2Deg, -80f, 80f);
-            fps.transform.rotation = Quaternion.Slerp(turnFromYaw, yaw, ease);
-            fps.rotationX = Mathf.Lerp(turnFromPitch, pitch, ease);
-            // Choosing an answer switches the controller off; the camera's tilt is set here then.
-            fps.playerCamera.transform.localRotation = Quaternion.Euler(fps.rotationX, 0f, fps.playerCamera.transform.localEulerAngles.z);
-            if (t >= 1f) turnTarget = null;
         }
 
         void Pick(int index)
@@ -484,6 +440,8 @@ namespace IronbarkCoop
         float lineUntil;
         public bool Alive => root;
         // Lab: is the partner's line on screen, and how tall its slot is.
+        // Lab: our answers on screen against every answer button in the list ("2of2"; a leftover button makes it "2of3").
+        public string Answers { get { int ours = 0, shown = 0; foreach (var v in options) if (v && v.gameObject.activeInHierarchy) ours++; if (optionsParent && optionTemplate) foreach (Transform child in optionsParent) if (child.gameObject.activeInHierarchy && child.name.StartsWith(optionTemplate.name)) shown++; return ours + "of" + shown; } }
         public string LineInfo => lineText ? (lineText.gameObject.activeInHierarchy && lineGroup && lineGroup.alpha > 0.5f && lineText.text.Length > 0 ? "shown" : "hidden")
             + Mathf.RoundToInt(lineText.TryGetComponent<UnityEngine.UI.LayoutElement>(out var slot) ? slot.preferredHeight : lineText.rectTransform.rect.height) : "none";
 
@@ -514,6 +472,11 @@ namespace IronbarkCoop
                 panel.optionsParent = Find(Path(listView));
                 panel.optionsGroup = Find(Path(AccessTools.Field(typeof(OptionsListView), "canvasGroup").GetValue(listView) as Component))?.GetComponent<CanvasGroup>();
             }
+            // Answer buttons the game's panel still holds from the player's own last talk are not ours (an old "Got it,
+            // thanks" showed in every talk heard afterwards). They go before the game's components are stripped: the
+            // button itself is the OptionView.
+            if (panel.optionsParent)
+                foreach (var old in panel.optionsParent.GetComponentsInChildren<OptionView>(true)) UnityEngine.Object.DestroyImmediate(old.gameObject);
             // The dialogue logic goes; the look stays (fonts, layout, the dialogue camera with its VHS filter).
             foreach (var behaviour in panel.root.GetComponentsInChildren<MonoBehaviour>(true))
             {
@@ -521,9 +484,6 @@ namespace IronbarkCoop
                 if (behaviour is YarnUnity::Yarn.Unity.DialogueViewBase || type.Assembly.GetName().Name.StartsWith("YarnSpinner") || type.Name == "OptionView" || type.Name == "Options" || type.Name == "dialogueSFX")
                     UnityEngine.Object.DestroyImmediate(behaviour);
             }
-            // Old option buttons copied from the game's panel are not ours.
-            if (panel.optionsParent)
-                foreach (Transform child in panel.optionsParent) if (child.GetComponent<UnityEngine.UI.Selectable>()) UnityEngine.Object.Destroy(child.gameObject);
             panel.root.transform.SetParent(null, false);
             UnityEngine.Object.Destroy(holder);
             panel.root.SetActive(true);
@@ -607,6 +567,7 @@ namespace IronbarkCoop
         }
 
         public void SetVisible(bool visible) { if (root && root.activeSelf != visible) root.SetActive(visible); }
+        public void Destroy() { if (root) UnityEngine.Object.Destroy(root); root = null; }
         public void ShowHint(string text) { if (hintText) hintText.text = text; }
 
         public void HideOptions()

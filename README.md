@@ -62,7 +62,9 @@ The code carries an address you can be reached at: external (if UPnP worked), el
 - **Rides**: driver and passenger seat, or stand in the cab; the ride's shake is felt inside; wheel, engine, horn and radio are shared.
 - **Tower**: one desk chair, one computer (booted once, windows shared, screen shown on the monitor); radio talks seen by both and answered together (coloured dots show who picked what: Marcus amber, Tessa teal).
 - **Going to sleep, Scratch Creek style**: whoever lies down first waits on their half of the bed; the night ends when both are in bed.
-- **Night 2, Scratch Creek style**: Tessa wakes up for the night; Marcus dreams — he walks a dark, blurred forest with a flashlight and hears Tessa far away, with heavy reverb. In the morning Marcus has his coffee at the rail while Tessa is still in bed and gets up when she likes (Space).
+- **Night 2, Scratch Creek style**: Tessa wakes up for the night; Marcus dreams — he walks a dark, blurred forest with a flashlight. He hears Tessa with heavy reverb as if from where he sleeps: clearly while she is in the tower, fading away as she leaves it; he hears her doors and switches too, and her switching the tower light on floods his dream with light. Asleep, he is not heard by her at all. His opening card shows question marks instead of the time. In the morning Marcus has his coffee at the rail while Tessa is still in bed and gets up when she likes (Space).
+- **The trail to the campers' smoke (day 3)**: go together or one alone. Whoever reaches the trail head first chooses to wait for the partner or go now; together, one bear spray is enough. Whoever stays gets a few chores in the tower and a nap until the other is back, and the evening starts for both.
+- **Night 4 supper**: Kayla's recipe comes to Tessa; you cook from it together (every ingredient either of you puts in is in the dish for both); once baked, there is a portion for each. Before sleeping Marcus has to go down to the porta-potty — and something may need checking on his way back.
 - **Co-op chores** on calm evenings (nights 4 and 6): the stove goes out, the wind blows the blinds open.
 
 ### Configuration
@@ -102,7 +104,7 @@ The code carries an address you can be reached at: external (if UPnP worked), el
 
 ### Status
 
-Tested automatically on two real copies of the game on one PC (22 test groups: network with packet loss and TCP fallback, menu and join code, avatars and animations, voice, shared story, personal scares and respawn, chores, every campaign scene, continue and reconnect, rides, diner, tower, nights 1–3 played end to end, the look picker, playing without Scratch Creek). Human playtests on one PC so far.
+Tested automatically on two real copies of the game on one PC (24 test groups: network with packet loss and TCP fallback, menu and join code, avatars and animations, voice, shared story, personal scares and respawn, chores, every campaign scene, continue and reconnect, rides, diner, tower, nights 1–3 played end to end, the trail to the smoke together and alone, night 4's supper and Marcus's errand, the look picker, playing without Scratch Creek). Human playtests on one PC so far.
 
 **Not yet verified:** a session over the internet between two PCs, a live microphone, a full campaign played by people, UPnP on a real router, the Steam connection path.
 
@@ -176,16 +178,18 @@ The build references the game's own assemblies from your install; none of them a
 - **Голос в 3D:** в полную силу вблизи, дальше плавно затихает и пропадает примерно через 12 м, за стенами глуше. Над говорящим иконка речи из Scratch Creek. Голос и движение идут по UDP и не «заикаются» при потерях в сети.
 - **Сидящих и спящих видно и слышно:** в машине, в кабинке закусочной, за компьютером — голова сидящего там, где его камера. На стул у компьютера садится один (и через клик по монитору тоже): второму скажут «Это место занято».
 - **Спать ложатся вдвоём, как в Scratch Creek:** кто лёг первым, ждёт на своей половине кровати (Пробел — встать), ночь кончается, когда ляжет второй. Каждый спит на своей половине, партнёр лежит в позе сна из Scratch Creek.
-- **Вторая ночь, как в Scratch Creek:** ночью просыпается Тесса (рация в кровати, туалет, снова спать), а Маркус спит и видит сон: идёт с фонариком по тёмному лесу, картинка сначала сильно размыта и проясняется на первых шагах, слышен звук сна, Тессу он слышит издалека, с эхом. Для Тессы Маркус спит рядом. Когда Тесса ложится, наступает утро: Маркус стоит у перил с кофе, а Тесса ещё лежит в кровати и встаёт, когда захочет (Пробел).
+- **Вторая ночь, как в Scratch Creek:** ночью просыпается Тесса (рация в кровати, туалет, снова спать), а Маркус спит и видит сон: идёт с фонариком по тёмному лесу, картинка сначала сильно размыта и проясняется на первых шагах, слышен звук сна. Тессу он слышит с эхом, как будто с кровати: отчётливо, пока она в вышке, и всё тише, когда она уходит. Её двери и выключатели он тоже слышит, а включённый ею свет в вышке заливает его сон светом. Пока Маркус спит, Тесса его не слышит. Вместо времени в заставке ночи у него знаки вопроса. Для Тессы Маркус спит рядом. Когда Тесса ложится, наступает утро: Маркус стоит у перил с кофе, а Тесса ещё лежит в кровати и встаёт, когда захочет (Пробел).
+- **Поход к дыму кемперов (день 3):** можно вдвоём или одному. Кто первым дошёл до тропы, выбирает: подождать напарника или идти сейчас. Вдвоём хватает одного баллончика от медведей. Кто остался, делает дела на вышке и дремлет, пока второй не вернётся; вечер начинается у обоих.
+- **Ужин в четвёртую ночь:** рецепт от Кайлы приходит Тессе, готовите по нему вместе (любой ингредиент, положенный кем угодно, лежит в блюде у обоих), после запекания у каждого своя порция. Перед сном Маркусу нужно спуститься в биотуалет — а на обратном пути, возможно, придётся кое-что проверить.
 - **Места в закусочной закреплены:** Маркус всегда садится на свою сторону стола (куда приносят еду), Тесса — напротив. Если Маркус уже сидит, клик Тессы по любому столу сажает её напротив него.
 - **Еда в закусочной:** каждому свой поднос. Официантка приносит поднос Маркусу, потом возвращается за вторым для Тессы; пока его не принесли, Маркус ждёт. Каждый ест только со своего подноса. С момента заказа до оплаты счёта за столом заказа не встаёт никто из тех, кто за ним сидит (как в одиночной игре).
 - **Сумка одна на двоих** во всех сценах: если её несёт партнёр, вас не остановят словами «надо забрать сумку». Положенная в фургон сумка едет вместе с ним и не мешает ему ехать. Ключ от вышки появляется у обоих.
-- **Что в руках, видно:** дрова, брошенные фонарики лежат у обоих (два брошенных — два фонарика, поднять может любой), зажжённые спички, спрей от медведей и канистра видны и слышны партнёру.
+- **Что в руках, видно:** дрова, брошенные фонарики лежат у обоих (два брошенных — два фонарика, поднять может любой), зажжённые спички, спрей от медведей и канистра видны и слышны партнёру, пролитый бензин виден обоим.
 - **Компьютер на вышке один:** включают его один раз — второй сразу попадает на рабочий стол; пароль, обновление и открытые окна общие, на мониторе виден экран того, кто сейчас работает.
 - **Разговоры по рации вдвоём:** если вы на вышке, видите разговор партнёра (и слова собеседника, и ответы) и выбираете ответ вместе. Ответ засчитывается, когда оба выбрали одно и то же; чей выбор где — показывают точки цвета персонажа (Маркус — янтарная, Тесса — бирюзовая). Отошли или вышли из вышки — разговор идёт без вас.
 - **Скример в будке охранника** достаётся тому, кто вошёл первым; рейнджер потом ждёт Маркуса и заговаривает, когда тот подходит.
 - **Люди вокруг ведут Маркуса:** барменша в закусочной и рейнджер на старте тропы работают с Маркусом, Тесса видит всё то же самое и может сама поболтать с барменшей. Поход в туалет в закусочной — задача Тессы, еду принесут, когда она вернётся.
-- **Двери, свет, радио и музыка общие:** дверь фургона, туалеты, фары и радио открываются и включаются у обоих, песня играет с одного места.
+- **Двери, свет, радио и музыка общие:** дверь фургона, туалеты (и биотуалет у вышки), фары и радио открываются и включаются у обоих, песня играет с одного места.
 - **Сюжет общий:** двери, свет, генератор, печь, жалюзи, предметы и прогресс ночи совпадают у обоих, и задания может выполнять любой.
 - **Инвентарь у каждого свой:** что взял, то у тебя, пока не положишь.
 - **Скримеры личные.** Второй игрок видит, как партнёр вздрагивает, и слышит вскрик, только если стоит рядом.
@@ -231,7 +235,7 @@ The build references the game's own assemblies from your install; none of them a
 
 ### Что проверено и что нет
 
-Проверено автотестами на двух настоящих копиях игры на одном компьютере (22 группы тестов): сеть с потерями и переход на TCP, меню и код подключения, персонажи и анимации, голос, общий сюжет, личные скримеры и возрождение, обязанности, все сцены кампании, продолжение и переподключение, поездки, закусочная, вышка, ночи 1–3 целиком, выбор внешности, игра без Scratch Creek. Живые плейтесты пока — на одном компьютере.
+Проверено автотестами на двух настоящих копиях игры на одном компьютере (24 группы тестов): сеть с потерями и переход на TCP, меню и код подключения, персонажи и анимации, голос, общий сюжет, личные скримеры и возрождение, обязанности, все сцены кампании, продолжение и переподключение, поездки, закусочная, вышка, ночи 1–3 целиком, поход к дыму вдвоём и одному, ужин и поход Маркуса в четвёртую ночь, выбор внешности, игра без Scratch Creek. Живые плейтесты пока — на одном компьютере.
 
 Ещё **не** проверено: игра через интернет между двумя ПК, живой микрофон, полное прохождение людьми, UPnP на реальном роутере, подключение через Steam.
 

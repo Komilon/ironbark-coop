@@ -22,6 +22,8 @@ namespace IronbarkCoop
             "FoodTray.SetFoodTray", "Waitress.SetFoodTray", "Waitress.WaitressPoint",
             // The generator is started by one player for the whole tower (night 1, and night 7 after the power cut).
             "WatchTowerManager.StartGenerator", "WatchTowerManager.PowerBack", "WatchTowerManager.FloodLightsBackOn",
+            // Night 4's casserole: an ingredient either player puts in is in both worlds' dish; it bakes for both.
+            "Casserole.SetCheese", "Casserole.SetPasta", "Casserole.SetPepperoni", "Casserole.SetSauce", "Casserole.SetTomato", "Casserole.FinishBaking",
         };
 
         internal static bool Applying;

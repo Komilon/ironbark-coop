@@ -165,6 +165,8 @@ namespace IronbarkCoop
                 // scene starts in our hands is the team's bag, at the same path in both worlds.
                 bool inHands = IsInLocalHands(transform);
                 if (go.scene != scene || !IsShared(go.tag, scene.name) || (inHands && !(go.CompareTag("Bag") && go.activeInHierarchy))) continue;
+                // A baked casserole is a portion for each player (night 4's supper, night 6's leftovers).
+                if (go.CompareTag("Casserole") && go.TryGetComponent<Casserole>(out var dish) && SupperSync.Baked(dish)) continue;
                 // The registration path is the identity; both players load the same scene layout.
                 string key = go.tag + ":" + PathOf(transform);
                 if (byKey.ContainsKey(key)) continue;
@@ -357,6 +359,17 @@ namespace IronbarkCoop
                     item.LastPose = "gone";
                     break;
             }
+        }
+
+        // From now on the object is each player's own (the partner has one of their own in their world).
+        internal void MakePersonal(GameObject target)
+        {
+            var item = items.Find(i => i.Target == target);
+            if (item == null) return;
+            if (item.HeldRemotely && target) target.SetActive(true);
+            items.Remove(item); byKey.Remove(item.Key);
+            if (RemoteHeldKey == item.Key) SetRemoteHeld(null);
+            Plugin.Log("ITEM_PERSONAL " + item.Key);
         }
 
         public void WriteList(string path)

@@ -158,6 +158,10 @@ namespace IronbarkCoop
         public int AppliedChanges { get; private set; }
         public int Tracked => entries.Count;
         internal Func<GameObject, bool> HeldItemCheck;
+        // Objects one player's moment uses for a while (Marcus's stair block, the flickering garage light): not mirrored
+        // either way meanwhile; their final state goes over again once released.
+        internal readonly HashSet<UnityEngine.Object> LocalOnly = new HashSet<UnityEngine.Object>();
+        bool IsLocalOnly(Entry entry) => LocalOnly.Count > 0 && ((entry is ActiveEntry a && LocalOnly.Contains(a.Target)) || (entry is MaterialEntry m && LocalOnly.Contains(m.Target)));
 
         public StorySync(Plugin plugin) { this.plugin = plugin; Instance = this; }
 
@@ -165,7 +169,7 @@ namespace IronbarkCoop
 
         public void SceneLoaded()
         {
-            entries.Clear(); byKey.Clear(); poses.Clear();
+            entries.Clear(); byKey.Clear(); poses.Clear(); LocalOnly.Clear();
             registeredScene = null;
             // Managers configure the scene in Start; register after that has settled.
             registerAt = Time.unscaledTime + 1.5f;
@@ -302,6 +306,7 @@ namespace IronbarkCoop
             {
                 // Objects still easing toward a remote pose are not echoed back.
                 if (entry is PoseEntry pose && pose.Moving) continue;
+                if (IsLocalOnly(entry)) continue;
                 string value;
                 try { value = entry.Read(); } catch { continue; }
                 if (value == null) continue;
@@ -326,7 +331,7 @@ namespace IronbarkCoop
                 foreach (var change in packet.changes)
                 {
                     int split = change.IndexOf('=');
-                    if (split <= 0 || !byKey.TryGetValue(change.Substring(0, split), out var entry)) continue;
+                    if (split <= 0 || !byKey.TryGetValue(change.Substring(0, split), out var entry) || IsLocalOnly(entry)) continue;
                     string value = change.Substring(split + 1);
                     try { entry.Apply(value); entry.Last = value; AppliedChanges++; AfterApply(entry.Key, value); }
                     catch (Exception ex) { Plugin.Log("STORY_APPLY_FAILED " + entry.Key + " " + ex.Message); }
@@ -371,6 +376,8 @@ namespace IronbarkCoop
         internal bool BeforeTransition(string name, int argument)
         {
             if (!Transitions.Contains(name)) return true;
+            // Marcus's night 4 errand comes before his sleep.
+            if (name == "FadeToSleep" && !ApplyingRemote && NightErrand.Instance != null && !NightErrand.Instance.AllowsSleep(argument)) return false;
             string id = name + ":" + argument;
             if (ApplyingRemote) { lastTransition = id; lastTransitionTime = Time.unscaledTime; plugin.Sleep.NightEnds(); return true; }
             // The partner already started this transition for us; a second local start would replay it.

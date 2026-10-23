@@ -109,6 +109,13 @@ namespace IronbarkCoop
             if (!gm || !tower || !tower.playerInBed) return;
             if (tower.playerCoffee) tower.playerCoffee.SetActive(false);
             if (tower.mugInHand) tower.mugInHand.gameObject.SetActive(false);
+            // The morning also puts the coffee mug in the hand (ItemPickUp.MugInHand): she has none, and the partner
+            // was shown it in her hand all day.
+            var pickup = gm.itemPickUp;
+            if (pickup && pickup.inHandMug && pickup.currentItem == (tower.mugInHand ? tower.mugInHand.gameObject : null))
+            {
+                pickup.inHand = false; pickup.inHandMug = false; pickup.currentItem = null; pickup.mug = null;
+            }
             if (tower.pictureMode) tower.pictureMode.gameObject.SetActive(false);
             gm.playerFP.SetActive(false);
             tower.playerInBed.SetActive(true);
@@ -236,7 +243,10 @@ namespace IronbarkCoop
         static void Prefix()
         {
             var sleep = SleepSync.Instance;
-            if (sleep == null || !(sleep.Waiting || sleep.MorningInBed) || !GameManager.instance) return;
+            if (!GameManager.instance) return;
+            // Napping in the day while the partner is at the campfire: Space would run night 4's get-up from supper.
+            if (TripSync.Instance != null && TripSync.Instance.Napping) { if (GameManager.instance.inputHandler.spaceInput) SetSpace.Invoke(GameManager.instance.inputHandler, new object[] { false }); return; }
+            if (sleep == null || !(sleep.Waiting || sleep.MorningInBed)) return;
             if (sleep.TakeSpace()) SetSpace.Invoke(GameManager.instance.inputHandler, new object[] { false });
             else if (GameManager.instance.inputHandler.spaceInput) SetSpace.Invoke(GameManager.instance.inputHandler, new object[] { false });
         }

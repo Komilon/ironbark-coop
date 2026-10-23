@@ -2,6 +2,34 @@
 
 Both players must use the same mod version. / У обоих игроков должна быть одна версия мода.
 
+## 0.7.0 — seventh playtest: the dream, the trail together or alone, night 4's supper and errand / седьмой плейтест
+
+Not compatible with 0.6.x in the same session (network protocol 8): update both. / С 0.6.x в одной игре не работает (протокол 8) — обновитесь оба.
+
+**English**
+- Radio talks: the listener's camera no longer turns to the speaker (0.6.1). A player who had a radio talk of their own saw one of its old answers ("Got it, thanks") in every talk they heard afterwards, unclickable: gone.
+- The partner lying in bed hung over it (the sleeping pose has the hips higher than the head): the body now rests on the mattress, the head on the pillow.
+- Night 2's dream (Marcus): Tessa's voice comes as if from where he sleeps — clear while she is in the tower, fading smoothly as she leaves it. What she does in the tower (doors, switches...) is heard in the dream too, muffled. Her switching the tower light on floods the dream with light (and dark again when switched off). He can walk much further (75 m instead of 32). His opening card shows question marks instead of the time (as in Scratch Creek). While he dreams, Tessa no longer hears him when he talks (V).
+- Morning after night 2: Marcus saw a mug in Tessa's hand all day (the morning put the coffee mug in her hand too): gone.
+- The porta-potty's door and lid move and sound for both.
+- Poured gas leaves its wet trail for both, and it stays when the partner picks the can up.
+- Day 3, the trail to the campers' smoke: whoever reaches the trail head first is asked (in the game's dialogue panel) to wait for the partner or go now. Together, one bear spray is enough. Alone (with the spray): the partner stays — the trail is closed for them, they get a few chores (window boards, the generator) and a nap until the other is back from the campfire; then the evening starts for both. Meanwhile they neither hear nor touch each other.
+- Night 4's supper: Kayla's recipe comes to Tessa only, also when Marcus had Connor's talk (before, the listener never got it). Every ingredient either player puts in is in the dish for both (before, each had their own half-filled dish and could not take it). Once baked, each has a whole portion; one eating does not empty the other's.
+- Night 4, before sleep: Marcus needs the porta-potty below the tower. With Tessa in the tower, on his way back up the light in the garage starts flickering: his view is turned to it the game's own way (its talking camera), with a sting, and the stairs stay closed (the game's own night 7 block) until he has looked into the garage, where the flickering stops. Tessa sees the light flicker from the tower. With Tessa down there with him, nothing happens.
+- Found while testing: a player who had followed the partner to the campfire could open the tower on night 1 afterwards (the partner's save said night 1 at that moment and was applied later); fixed. A partner who has gone to another scene is no longer shown standing where they left.
+
+**Русский**
+- Рация: камера слушающего больше не поворачивается к говорящему (было в 0.6.1). У того, кто сам говорил по рации, в каждом услышанном потом разговоре висел старый ответ («Понял, спасибо»), на который нельзя нажать, — убран.
+- Партнёр на кровати висел над ней (в позе сна таз выше головы): теперь лежит на матрасе, голова на подушке.
+- Сон во вторую ночь (Маркус): голос Тессы звучит как будто с кровати — отчётливо, пока она в вышке, и плавно затихает, когда она уходит. Её действия в вышке (двери, выключатели…) тоже слышны во сне, приглушённо. Включённый ею свет в вышке заливает сон светом (выключила — снова темно). Отходить можно гораздо дальше (75 м вместо 32). Вместо времени в заставке ночи — знаки вопроса (как в Scratch Creek). Пока Маркус спит, Тесса больше не слышит его, даже если он говорит (V).
+- Утро после второй ночи: Маркус весь день видел у Тессы в руке кружку (утро клало кружку и ей) — больше нет.
+- Дверь и крышка биотуалета открываются и звучат у обоих.
+- След пролитого бензина виден обоим и не пропадает, когда канистру берёт партнёр.
+- День 3, тропа к дыму кемперов: кто первым дошёл до тропы, выбирает в диалоговом окне игры — подождать напарника или идти сейчас. Вдвоём хватает одного баллончика от медведей. Один (с баллончиком): второй остаётся — тропа для него закрыта, у него дела на вышке (ставни, генератор) и дрёма, пока первый не вернётся с костра; затем вечер начинается у обоих. Пока они в разных местах, друг друга не слышат и не задевают.
+- Ужин в четвёртую ночь: рецепт от Кайлы приходит только Тессе, и тогда, когда с Коннором говорил Маркус (раньше слушающему он не приходил вовсе). Любой ингредиент, положенный кем угодно, лежит в блюде у обоих (раньше у каждого было своё наполовину собранное блюдо, и взять его было нельзя). После запекания у каждого целая порция; один поел — у другого не убыло.
+- Четвёртая ночь, перед сном: Маркусу нужно в биотуалет у вышки. Если Тесса в вышке, на обратном пути в гараже начинает мигать свет: взгляд переводится на него способом самой игры (её камерой разговора), со страшным звуком, а лестница закрыта (стенка самой игры из седьмой ночи), пока он не заглянет в гараж — там мигание сразу прекращается. Тесса видит мигание из вышки. Если Тесса спустилась вместе с ним, ничего не происходит.
+- Найдено при проверке: игрок, который пошёл к костру вслед за партнёром, потом мог открыть вышку на первой ночи (в сохранении партнёра в тот момент была первая ночь, и она применялась позже) — исправлено. Партнёр, ушедший в другую сцену, больше не стоит застывшим там, где был.
+
 ## 0.6.1 — radio talks: back in the talk at once, the camera turns to the speaker / разговоры по рации
 
 Works together with 0.6.0 (same protocol), but update both for the fixes. / Совместима с 0.6.0, но для исправлений обновитесь оба.

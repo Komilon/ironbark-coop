@@ -36,7 +36,7 @@ namespace IronbarkCoop
             source.maxDistance = MaxDistance;
             source.dopplerLevel = 0f;
             source.loop = true;
-            source.volume = Mathf.Clamp01(volume);
+            source.volume = baseVolume = Mathf.Clamp01(volume);
             // Filter order matters: speech is written first, then muffled by the low-pass when walls block it.
             filter = emitter.AddComponent<VoiceAudioFilter>();
             filter.Buffer = buffer;
@@ -96,17 +96,27 @@ namespace IronbarkCoop
         }
 
 
-        // Asleep (the dream): the partner is heard without direction or distance, far off and echoing.
+        // Asleep (the dream): the partner is heard without direction, far off and echoing, and only as loud as she would
+        // be at the bed (fading out as she leaves the tower).
         AudioReverbFilter reverb;
-        bool dream;
-        public void SetDream(bool on)
+        bool dream, sleepTalk;
+        float dreamGain = 1f, gain = 1f;
+        readonly float baseVolume;
+        public float Gain => gain;
+        public void SetDream(bool on, float hearing)
         {
+            dreamGain = on ? Mathf.Clamp01(hearing) : 1f;
             if (on == dream) return;
             dream = on;
             source.spatialBlend = on ? 0f : 1f;
             if (on && !reverb) reverb = emitter.AddComponent<AudioReverbFilter>();
             if (reverb) { reverb.reverbPreset = AudioReverbPreset.Psychotic; reverb.enabled = on; }
         }
+
+        // The partner is the one dreaming: asleep in the bed here, they are not heard at all (playtest report: Tessa
+        // heard the dreaming Marcus talk).
+        public void SetSleepTalk(bool on) => sleepTalk = on;
+        const float SleepTalkGain = 0f;
         public void Update(Vector3 headPosition, bool present)
         {
             emitter.transform.position = headPosition;
@@ -126,7 +136,12 @@ namespace IronbarkCoop
                     occludedTarget = Occluded ? 1400f : 22000f;
                 }
             }
-            lowPass.cutoffFrequency = Mathf.Lerp(lowPass.cutoffFrequency, dream ? 900f : occludedTarget, 1f - Mathf.Exp(-12f * Time.unscaledDeltaTime));
+            float cutoff = dream ? 900f : occludedTarget;
+            lowPass.cutoffFrequency = Mathf.Lerp(lowPass.cutoffFrequency, cutoff, 1f - Mathf.Exp(-12f * Time.unscaledDeltaTime));
+            float wanted = (dream ? dreamGain : 1f) * (sleepTalk ? SleepTalkGain : 1f);
+            // Falling asleep (or waking) is not a fade: the dreamer is silent at once.
+            gain = sleepTalk ? 0f : Mathf.MoveTowards(gain, wanted, Time.unscaledDeltaTime * 2f);
+            source.volume = baseVolume * gain;
         }
 
         public void Dispose()

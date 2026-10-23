@@ -57,20 +57,26 @@ namespace IronbarkCoop
             if (!gm.uIManager.inTransition && !gm.isConversing && gm.firstPersonController && !gm.firstPersonController.enabled) gm.firstPersonController.enabled = true;
             dreamTime += Time.deltaTime;
             Animate();
+            TowerLight(tower);
             // The dream has no far side: walking out of it brings you back where it began.
             var player = Player;
-            if (player && (player.position - start).sqrMagnitude > DreamRadius * DreamRadius) { Place(start); if (lens) lens.intensity.value = -80f; Plugin.Log("DREAM_LOOPED"); }
+            if (player && (player.position - start).sqrMagnitude > dreamRadius * dreamRadius) { Place(start); if (lens) lens.intensity.value = -80f; Plugin.Log("DREAM_LOOPED"); }
             if (plugin.Lab && Time.unscaledTime >= nextTrace) { nextTrace = Time.unscaledTime + 2f; Plugin.Log("DREAM_AT " + (player ? player.position.ToString("F1") : "-")); }
         }
 
-        const float DreamRadius = 32f;
+        // How far he can walk before the dream brings him back: as far as the forest around the spot is free of the
+        // story's triggers (tried widest first).
+        static readonly float[] DreamRadii = { 75f, 55f, 32f };
+        float dreamRadius = 32f;
+        public float Radius => dreamRadius;
 
         void Begin()
         {
             var gm = GameManager.instance;
             var tower = gm ? gm.watchTowerManager : null;
             if (!tower || !gm.firstPersonController) return;
-            var spot = FindSpot(tower.transform.position);
+            Vector3? spot = null;
+            foreach (var radius in DreamRadii) { spot = FindSpot(tower.transform.position, radius); if (spot.HasValue) { dreamRadius = radius; break; } }
             if (!spot.HasValue) { Plugin.Log("DREAM_NO_SPOT"); return; }
             Dreaming = true;
             dreamTime = 0f; walked = 0f;
@@ -86,8 +92,50 @@ namespace IronbarkCoop
             // Whatever he went to bed holding (the bag, his own flashlight) stays out of the dream.
             hands = gm.itemPickUp ? gm.itemPickUp.itemHere : null;
             if (hands) hands.gameObject.SetActive(false);
-            Plugin.Log("DREAM_BEGIN at " + start.ToString("F1"));
+            lightBlend = tower.isLightOn ? 1f : 0f; lightWasOn = tower.isLightOn;
+            Plugin.Log("DREAM_BEGIN at " + start.ToString("F1") + " radius=" + dreamRadius + " towerLight=" + tower.isLightOn);
         }
+
+        // Where he lies asleep (his half of the bed): what reaches him from the tower is heard as from there.
+        internal Vector3? SleeperPoint
+        {
+            get
+            {
+                var tower = GameManager.instance ? GameManager.instance.watchTowerManager : null;
+                return BedSync.HalfEye(tower, false);
+            }
+        }
+
+        // How loud something from the waking world is in the dream, by its distance from the sleeper: as heard from
+        // inside the tower up to 4 m, fading smoothly (40 dB) to nothing at 18 m (the foot of the tower is 16-17 m away).
+        internal static float Hearing(float distance)
+        {
+            if (distance <= 4f) return 1f;
+            if (distance >= 18f) return 0f;
+            float f = (distance - 4f) / 14f;
+            float gain = Mathf.Pow(10f, -40f * f / 20f);
+            return f > 0.9f ? gain * (1f - f) / 0.1f : gain;
+        }
+
+        internal float HearingAt(Vector3 point) { var sleeper = SleeperPoint; return sleeper.HasValue ? Hearing(Vector3.Distance(point, sleeper.Value)) : 0f; }
+
+        // The tower's light, switched on by the partner while he sleeps, floods the dream: the picture goes very bright
+        // (and dark again when it is switched off).
+        float lightBlend; bool lightWasOn;
+        ColorGrading grading; Bloom glow;
+        void TowerLight(WatchTowerManager tower)
+        {
+            bool on = tower.isLightOn;
+            if (on != lightWasOn) { lightWasOn = on; Plugin.Log("DREAM_LIGHT " + (on ? "on" : "off")); }
+            lightBlend = Mathf.MoveTowards(lightBlend, on ? 1f : 0f, Time.deltaTime / 0.6f);
+            float k = lightBlend * lightBlend * (3f - 2f * lightBlend);
+            if (grading) grading.postExposure.value = Mathf.Lerp(0.2f, 3.4f, k);
+            if (glow) glow.intensity.value = Mathf.Lerp(2f, 7f, k);
+            RenderSettings.fogColor = Color.Lerp(DarkFog, new Color(0.82f, 0.84f, 0.88f), k);
+            RenderSettings.ambientLight = Color.Lerp(DarkAmbient, new Color(0.7f, 0.7f, 0.75f), k);
+        }
+        public string LightDebug => Dreaming ? (lightWasOn ? "on" : "off") + "/" + lightBlend.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) : "-";
+        static readonly Color DarkFog = new Color(0.10f, 0.12f, 0.16f), DarkAmbient = new Color(0.10f, 0.11f, 0.14f);
 
         // Out of the dream. When the night ends (Tessa lies down), he is up in the tower as the game expects a player
         // who has just gone to bed to be, and the morning sets him up from there. When the partner left, he is back in
@@ -145,17 +193,19 @@ namespace IronbarkCoop
 
         // Forest floor well away from the tower and from every scripted trigger, so nothing in the night's story can
         // be set off from the dream (tried on rings around the tower, the same order every time).
-        static Vector3? FindSpot(Vector3 around)
+        static Vector3? FindSpot(Vector3 around, float dreamRadius)
         {
-            foreach (float radius in new[] { 120f, 150f, 95f, 180f })
+            // Far enough out that the tower stays out of sight in the haze from anywhere he can walk.
+            foreach (float ring in new[] { 120f, 150f, 95f, 180f, 220f, 260f })
                 for (int i = 0; i < 24; i++)
                 {
+                    if (ring - dreamRadius < 50f) break;
                     var direction = Quaternion.Euler(0f, i * 15f, 0f) * Vector3.forward;
-                    var probe = around + direction * radius;
+                    var probe = around + direction * ring;
                     if (!Physics.Raycast(probe + Vector3.up * 300f, Vector3.down, out var hit, 600f, ~0, QueryTriggerInteraction.Ignore)) continue;
                     if (!(hit.collider is TerrainCollider) || hit.normal.y < 0.85f) continue;
                     bool quiet = true;
-                    foreach (var collider in Physics.OverlapSphere(hit.point, DreamRadius + 25f, ~0, QueryTriggerInteraction.Collide))
+                    foreach (var collider in Physics.OverlapSphere(hit.point, dreamRadius + 25f, ~0, QueryTriggerInteraction.Collide))
                         if (collider.isTrigger) { quiet = false; break; }
                     if (!quiet) continue;
                     // Room to stand.
@@ -174,8 +224,8 @@ namespace IronbarkCoop
                 savedFog = RenderSettings.fog; savedFogMode = RenderSettings.fogMode; savedFogDensity = RenderSettings.fogDensity; savedFogColor = RenderSettings.fogColor; savedAmbient = RenderSettings.ambientLight;
                 RenderSettings.fog = true; RenderSettings.fogMode = FogMode.ExponentialSquared; RenderSettings.fogDensity = 0.035f;
                 // A pale haze the trees stand out against, rather than plain black.
-                RenderSettings.fogColor = new Color(0.10f, 0.12f, 0.16f);
-                RenderSettings.ambientLight = new Color(0.10f, 0.11f, 0.14f);
+                RenderSettings.fogColor = DarkFog;
+                RenderSettings.ambientLight = DarkAmbient;
                 fx = new GameObject("Coop dream");
                 if (camera)
                 {
@@ -197,10 +247,10 @@ namespace IronbarkCoop
                 chroma = profile.AddSettings<ChromaticAberration>(); chroma.enabled.Override(true); chroma.intensity.Override(0.8f);
                 var vignette = profile.AddSettings<Vignette>(); vignette.enabled.Override(true); vignette.intensity.Override(0.55f); vignette.smoothness.Override(0.8f); vignette.color.Override(Color.black);
                 var grain = profile.AddSettings<Grain>(); grain.enabled.Override(true); grain.intensity.Override(0.7f); grain.size.Override(1.6f);
-                var grading = profile.AddSettings<ColorGrading>(); grading.enabled.Override(true); grading.saturation.Override(-55f); grading.temperature.Override(-25f); grading.postExposure.Override(0.2f);
+                grading = profile.AddSettings<ColorGrading>(); grading.enabled.Override(true); grading.saturation.Override(-55f); grading.temperature.Override(-25f); grading.postExposure.Override(0.2f);
                 focus = profile.AddSettings<DepthOfField>(); focus.enabled.Override(true); focus.focusDistance.Override(1.5f); focus.aperture.Override(0.1f); focus.focalLength.Override(200f);
                 // Scratch Creek's dream glows (its Glow_Color filter): soft cold bloom on every light.
-                var glow = profile.AddSettings<Bloom>(); glow.enabled.Override(true); glow.intensity.Override(2f); glow.threshold.Override(0.9f); glow.softKnee.Override(0.8f); glow.diffusion.Override(9f); glow.color.Override(new Color(0.75f, 0.85f, 1f));
+                glow = profile.AddSettings<Bloom>(); glow.enabled.Override(true); glow.intensity.Override(2f); glow.threshold.Override(0.9f); glow.softKnee.Override(0.8f); glow.diffusion.Override(9f); glow.color.Override(new Color(0.75f, 0.85f, 1f));
                 ambience = Ambience();
                 volume = fx.AddComponent<PostProcessVolume>();
                 volume.isGlobal = true; volume.priority = 500f; volume.weight = 1f; volume.sharedProfile = profile;
@@ -213,7 +263,7 @@ namespace IronbarkCoop
                 if (fx) Object.Destroy(fx);
                 if (torch) Object.Destroy(torch);
                 if (layer) layer.enabled = layerWasEnabled;
-                fx = null; torch = null; volume = null; lens = null; chroma = null; focus = null; layer = null; ambience = null;
+                fx = null; torch = null; volume = null; lens = null; chroma = null; focus = null; layer = null; ambience = null; grading = null; glow = null;
             }
         }
 
@@ -282,13 +332,84 @@ namespace IronbarkCoop
             packet.rotation = Quaternion.Euler(0f, packet.steer, 0f);
             packet.pitch = -60f;
             packet.hand = null; packet.torch = false; packet.light = false;
+            // Asleep: what he says (push to talk in the dream) is not heard by the partner.
+            packet.code2 = "dream";
             return true;
+        }
+
+        // Sounds the partner makes in the tower (the door, the light switch, the fridge...) reach the dream the way her
+        // voice does: as from where he lies, muffled and echoing, quieter the further from the bed they are made.
+        internal static bool FromPartner => Instance != null && Instance.Dreaming
+            && (RemoteCalls.Applying || HandEffects.Mirroring || (StorySync.Instance != null && StorySync.Instance.ApplyingRemote));
+        static bool echoing;
+        int lastEchoFrame; AudioClip lastEchoClip;
+        public int Echoes { get; private set; }
+
+        internal void Echo(AudioSource source, AudioClip clip, float volumeScale)
+        {
+            if (echoing || !Dreaming || !source || !clip) return;
+            // One sound, one echo (PlayOneShot may call its own overload).
+            if (lastEchoFrame == Time.frameCount && lastEchoClip == clip) return;
+            float gain = HearingAt(source.transform.position);
+            if (gain <= 0.01f) return;
+            lastEchoFrame = Time.frameCount; lastEchoClip = clip;
+            echoing = true;
+            try
+            {
+                var go = new GameObject("Coop dream echo");
+                var echo = go.AddComponent<AudioSource>();
+                echo.clip = clip; echo.spatialBlend = 0f; echo.playOnAwake = false; echo.pitch = source.pitch;
+                echo.volume = Mathf.Clamp01(source.volume * volumeScale * gain * 0.8f);
+                echo.outputAudioMixerGroup = source.outputAudioMixerGroup;
+                go.AddComponent<AudioLowPassFilter>().cutoffFrequency = 1200f;
+                go.AddComponent<AudioReverbFilter>().reverbPreset = AudioReverbPreset.Psychotic;
+                echo.Play();
+                Object.Destroy(go, clip.length / Mathf.Max(0.1f, Mathf.Abs(echo.pitch)) + 3f);
+                Echoes++;
+                Plugin.Log("DREAM_ECHO " + clip.name + " gain=" + gain.ToString("F2"));
+            }
+            finally { echoing = false; }
         }
 
         sealed class FollowCamera : MonoBehaviour
         {
             public Transform Target;
             void LateUpdate() { if (Target) transform.SetPositionAndRotation(Target.TransformPoint(new Vector3(0.2f, -0.2f, 0.3f)), Target.rotation); }
+        }
+    }
+
+    [HarmonyPatch(typeof(AudioSource), nameof(AudioSource.Play), new System.Type[0])]
+    internal static class DreamEchoPlayPatch
+    {
+        static void Postfix(AudioSource __instance) { if (DreamSync.FromPartner) DreamSync.Instance.Echo(__instance, __instance.clip, 1f); }
+    }
+
+    [HarmonyPatch(typeof(AudioSource), nameof(AudioSource.PlayOneShot), new[] { typeof(AudioClip), typeof(float) })]
+    internal static class DreamEchoOneShotPatch
+    {
+        static void Postfix(AudioSource __instance, AudioClip clip, float volumeScale) { if (DreamSync.FromPartner) DreamSync.Instance.Echo(__instance, clip, volumeScale); }
+    }
+
+    [HarmonyPatch(typeof(AudioSource), nameof(AudioSource.PlayOneShot), new[] { typeof(AudioClip) })]
+    internal static class DreamEchoOneShotPlainPatch
+    {
+        static void Postfix(AudioSource __instance, AudioClip clip) { if (DreamSync.FromPartner) DreamSync.Instance.Echo(__instance, clip, 1f); }
+    }
+
+    // The night's opening card tells the time; the one who is about to dream does not know it (Scratch Creek shows
+    // question marks there).
+    [HarmonyPatch(typeof(SceneIntroText), nameof(SceneIntroText.StartTyping), new System.Type[0])]
+    internal static class DreamIntroTimePatch
+    {
+        static void Prefix(SceneIntroText __instance)
+        {
+            var dream = DreamSync.Instance;
+            var ui = GameManager.instance ? GameManager.instance.uIManager : null;
+            if (dream == null || !dream.SkipBedRadio || !ui || __instance != ui.introText2) return;
+            var text = __instance.GetComponent<TMPro.TMP_Text>();
+            if (!text) return;
+            text.text = System.Text.RegularExpressions.Regex.Replace(text.text, @"\d{1,2}\s*:\s*\d{2}", m => System.Text.RegularExpressions.Regex.Replace(m.Value, @"\d", "?"));
+            Plugin.Log("DREAM_INTRO_TIME " + text.text.Replace("\n", " | "));
         }
     }
 

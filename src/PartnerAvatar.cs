@@ -178,6 +178,8 @@ namespace IronbarkCoop
         public Vector3 HeadPosition => driver.HeadPosition;
         // How far the seated head is from the eye point it is anchored to in our world (-1 when not anchored).
         public float HeadToSeatEye => driver.HeadToSeatEye;
+        // Lying: how high the hips are over what is under them (-1 when not lying).
+        public float LyingHipsGap => driver.Lying ? driver.LyingHipsGap : -1f;
         public float Speed => driver.Speed;
         public string HeldInfo => driver.HeldInfo;
         public string TorchInfo => driver.TorchInfo;
@@ -280,12 +282,32 @@ namespace IronbarkCoop
             SeatOffset = Vector3.zero;
             if (!seatEye.HasValue || !Sitting || !head || Time.unscaledTime >= anchoredUntil) return;
             var forward = Quaternion.Euler(0f, bodyYaw, 0f) * Vector3.forward;
-            // Lying, the eyes look up from the pillow: the head is just below them.
-            var wanted = Lying ? seatEye.Value - Vector3.up * 0.1f : seatEye.Value - Vector3.up * EyeAboveHead - forward * EyeBeforeHead;
+            // Lying, the eyes look up from the pillow: the head is just below them, a little toward the feet (the head
+            // on the pillow, not over the headboard).
+            var wanted = Lying ? seatEye.Value - Vector3.up * 0.1f + anchorYaw * Vector3.forward * 0.12f : seatEye.Value - Vector3.up * EyeAboveHead - forward * EyeBeforeHead;
             var delta = Vector3.ClampMagnitude(wanted - head.position, 1.2f);
             transform.position += delta;
+            if (Lying) delta += RestOnMattress();
             headToSeatEye = Vector3.Distance(head.position, seatEye.Value);
             SeatOffset = delta;
+        }
+
+        // The sleeping clip lies with the hips higher than the head (it was made for another bed): placed by the head,
+        // the back and legs hung about 0.25 m over the mattress. The body is lowered until the hips rest on whatever is
+        // under them (the head then sinks into the pillow).
+        const float HipsAboveMattress = 0.12f;
+        public float LyingHipsGap { get; private set; } = -1f;
+        Vector3 RestOnMattress()
+        {
+            if (!hips) return Vector3.zero;
+            float top = float.MinValue;
+            foreach (var hit in Physics.RaycastAll(hips.position + Vector3.up * 0.3f, Vector3.down, 1.2f, ~0, QueryTriggerInteraction.Ignore))
+                if (!hit.collider.transform.IsChildOf(transform.root) && hit.point.y > top) top = hit.point.y;
+            if (top == float.MinValue) { LyingHipsGap = -1f; return Vector3.zero; }
+            var move = Vector3.up * Mathf.Clamp(top + HipsAboveMattress - hips.position.y, -0.5f, 0.2f);
+            transform.position += move;
+            LyingHipsGap = hips.position.y - top;
+            return move;
         }
 
 

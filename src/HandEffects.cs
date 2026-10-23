@@ -64,7 +64,7 @@ namespace IronbarkCoop
         public void SceneLoaded()
         {
             torches.Clear(); torchIds.Clear(); glides.Clear(); restSent.Clear(); heldTorch = null; movingTorch = null; copies.Clear(); handScale = Vector3.zero;
-            spraying = false; matchboxOpen = false; pouring = false; mirroredMatches.Clear();
+            spraying = false; matchboxOpen = false; pouring = false; mirroredMatches.Clear(); trail = null;
         }
 
         // Scene path of a personal item in our hand (shared story items travel through ItemSync instead).
@@ -101,6 +101,7 @@ namespace IronbarkCoop
             bool open = pickup.inHandMatchbox && pickup.currentItem && pickup.currentItem.TryGetComponent<Matchbox>(out var box) && !box.isClosed;
             if (open != matchboxOpen) { matchboxOpen = open; plugin.Send(new Packet { kind = "fx", code = "matchbox", active = open, scene = scene }); }
             Torches(pickup, scene);
+            GasTrail(scene);
             if (remoteSpray) AimRemoteSpray();
         }
 
@@ -310,6 +311,17 @@ namespace IronbarkCoop
         {
             var visual = plugin.PartnerHeldVisual;
             if (!visual) return;
+            // The wet patches come from the pourer's world (their own stream lands them); the copy only splashes.
+            foreach (var ps in visual.GetComponentsInChildren<ParticleSystem>(true))
+            {
+                var subs = ps.subEmitters;
+                if (!subs.enabled) continue;
+                for (int i = subs.subEmittersCount - 1; i >= 0; i--)
+                {
+                    var system = subs.GetSubEmitterSystem(i);
+                    if (system && system.main.startLifetime.constantMax > 1000f) subs.RemoveSubEmitter(i);
+                }
+            }
             foreach (var ps in visual.GetComponentsInChildren<ParticleSystem>(true)) { if (on) { ps.gameObject.SetActive(true); ps.Play(true); } else ps.Stop(true, ParticleSystemStopBehavior.StopEmitting); }
             foreach (var audio in visual.GetComponentsInChildren<AudioSource>(true)) { if (on && audio.clip && !audio.isPlaying) audio.Play(); else if (!on) audio.Stop(); }
             if (on) PoursMirrored++;
@@ -357,6 +369,85 @@ namespace IronbarkCoop
 
         internal static bool IsMirroredMatch(MatchStick match) => match && mirroredMatches.Contains(match.gameObject.GetInstanceID());
 
+        // ---- the gas trail ----
+
+        // Poured gas leaves wet patches (the stream's "wet" sub-emitter, particles that never die) inside the can's own
+        // particle system: they were not in the partner's world at all, and in ours they vanished whenever the partner
+        // picked the can up (a carried can is switched off here). Every patch is moved into one trail that belongs to
+        // the scene, in both worlds; the partner's patches arrive by position.
+        ParticleSystem trail;
+        float nextTrailCheck;
+        public int TrailPatches => trail ? trail.particleCount : 0;
+        static ParticleSystem.Particle[] trailBuffer = new ParticleSystem.Particle[256];
+
+        void GasTrail(string scene)
+        {
+            if (Time.unscaledTime < nextTrailCheck) return;
+            nextTrailCheck = Time.unscaledTime + 0.25f;
+            foreach (var gas in UnityEngine.Object.FindObjectsOfType<Gas>())
+            {
+                var wet = gas.gasPsWet;
+                if (!wet || wet.particleCount == 0 || !EnsureTrail(wet)) continue;
+                if (trailBuffer.Length < wet.particleCount) trailBuffer = new ParticleSystem.Particle[wet.particleCount * 2];
+                int count = wet.GetParticles(trailBuffer);
+                var sent = new List<string>();
+                for (int i = 0; i < count; i++)
+                {
+                    var p = trailBuffer[i];
+                    EmitPatch(p.position, p.startSize, p.rotation, p.startColor);
+                    Color32 c = p.startColor;
+                    sent.Add(string.Format(CultureInfo.InvariantCulture, "{0:F2},{1:F2},{2:F2},{3:F3},{4:F0},{5},{6},{7},{8}", p.position.x, p.position.y, p.position.z, p.startSize, p.rotation, c.r, c.g, c.b, c.a));
+                }
+                wet.Clear(false);
+                if (!plugin.Ready) continue;
+                for (int start = 0; start < sent.Count; start += 200)
+                    plugin.Send(new Packet { kind = "fx", code = "gas-trail", scene = scene, changes = sent.GetRange(start, Math.Min(200, sent.Count - start)).ToArray() });
+            }
+        }
+
+        bool EnsureTrail(ParticleSystem template)
+        {
+            if (trail) return true;
+            if (!template) foreach (var gas in Resources.FindObjectsOfTypeAll<Gas>()) if (gas.gasPsWet && gas.gameObject.scene.IsValid()) { template = gas.gasPsWet; break; }
+            if (!template) return false;
+            var copy = UnityEngine.Object.Instantiate(template.gameObject);
+            copy.name = "Coop gas trail";
+            copy.transform.SetParent(null, false);
+            copy.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+            copy.transform.localScale = Vector3.one;
+            foreach (Transform child in copy.transform) UnityEngine.Object.Destroy(child.gameObject);
+            trail = copy.GetComponent<ParticleSystem>();
+            var main = trail.main; main.playOnAwake = false; main.simulationSpace = ParticleSystemSimulationSpace.World; main.maxParticles = 200000;
+            var emission = trail.emission; emission.enabled = false;
+            trail.Clear(false);
+            copy.SetActive(true);
+            trail.Play(false);
+            return true;
+        }
+
+        void EmitPatch(Vector3 position, float size, float rotation, Color32 color)
+        {
+            trail.Emit(new ParticleSystem.EmitParams { position = position, startSize = size, rotation = rotation, startColor = color, startLifetime = 5000000f, velocity = Vector3.zero, applyShapeToPosition = false }, 1);
+        }
+
+        void ReceiveGasTrail(Packet packet)
+        {
+            if (packet.changes == null || !EnsureTrail(null)) return;
+            foreach (var entry in packet.changes)
+            {
+                var parts = entry.Split(',');
+                if (parts.Length != 9) continue;
+                float F(int i) => float.Parse(parts[i], CultureInfo.InvariantCulture);
+                byte B(int i) => byte.Parse(parts[i], CultureInfo.InvariantCulture);
+                EmitPatch(new Vector3(F(0), F(1), F(2)), F(3), F(4), new Color32(B(5), B(6), B(7), B(8)));
+            }
+            GasPatchesReceived += packet.changes.Length;
+        }
+        public int GasPatchesReceived { get; private set; }
+
+        // The next day starts with the floor dry (Seq3Start clears the can's particles).
+        internal void ClearGasTrail() { if (trail) trail.Clear(false); }
+
         public void Receive(Packet packet)
         {
             if (packet.scene != SceneManager.GetActiveScene().name) return;
@@ -366,9 +457,16 @@ namespace IronbarkCoop
                 case "matchbox": ReceiveMatchbox(packet.active); break;
                 case "pour": ReceivePour(packet.active); break;
                 case "match": ReceiveMatch(packet); break;
+                case "gas-trail": ReceiveGasTrail(packet); break;
                 default: if (packet.code != null && packet.code.StartsWith("torch-")) ReceiveTorch(packet); break;
             }
         }
+    }
+
+    [HarmonyPatch(typeof(Gas), nameof(Gas.ClearPS))]
+    internal static class GasTrailClearPatch
+    {
+        static void Postfix() => Plugin.Instance?.Hands.ClearGasTrail();
     }
 
     // Lab only: the mouse button "held" on the bear spray (the can stops spraying the moment the button is up).
