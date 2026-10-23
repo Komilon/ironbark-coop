@@ -2,6 +2,28 @@
 
 Both players must use the same mod version. / У обоих игроков должна быть одна версия мода.
 
+## 0.8.0 — playtest fixes: chores for whoever stays, two trays at supper, Marcus's errand the game's way / исправления по плейтесту
+
+Protocol 9: both players need 0.8.0. / Протокол 9: обоим нужна 0.8.0.
+
+**English**
+- Day 3, staying in the tower while the partner goes to the smoke: a task list in the top-left corner (in the game's font): shut the window boards, stoke the stove (it has burnt out since the morning: firewood from the pile below and a match), and a little after the boards the generator stalls and has to be restarted. Then the nap. A partner done at the campfire earlier waits (screen dark) until the nap begins, and the one in the tower is told.
+- No more "I left the bear spray" every time the one who stays goes downstairs.
+- Night 4 begins with the stove already burning (the night's own "light the stove" no longer keeps Tessa from bed while Marcus is at the porta-potty), and with the boards shut if the one who stayed shut them. The mod's random "the stove went out" chore no longer runs in night 4 (it was what put the fire out after supper).
+- Supper: the oven holds two trays, a portion each. Both are shared things: taken out of the oven, in a hand, thrown and picked up, put down — the same for both. Each eats from their own tray, and the partner sees what is left on it.
+- Eating in bed: the partner sits (no longer lies), one at the head end of the bed and the other at the foot, not in each other.
+- Marcus's errand: his thoughts as subtitles ("After a supper like that I need the porta-potty", "As I remember, it's downstairs") instead of the white hint; the toilet itself is the game's own (click it with the door shut), and a visit earlier that night no longer blocks it ("I was done with it"). Meanwhile Tessa thinks it is time for bed.
+- Night 5: Marcus could not get up after Tessa had (the "looked at the window" flag was shared); it is each player's own now.
+
+**Русский**
+- День 3, кто остаётся на вышке, пока напарник идёт к дыму: список заданий слева вверху (шрифтом игры): закрыть ставни, подтопить печь (с утра прогорела: дрова из поленницы внизу и спичка), а чуть позже после ставней глохнет генератор — его нужно завести. Потом сон. Если напарник у костра управился раньше, он ждёт (экран тёмный), пока оставшийся не ляжет, и тому об этом сообщается.
+- Больше нет «я забыл медвежий спрей» каждый раз, когда оставшийся спускается вниз.
+- Ночь 4 начинается с уже горящей печью (собственное «разожги печь» больше не мешает Тессе лечь, пока Маркус в туалете) и с закрытыми ставнями, если их закрыл оставшийся. Случайное поручение мода «огонь в печи погас» в 4-ю ночь больше не срабатывает (именно оно тушило печь после ужина).
+- Ужин: в духовке два подноса, по порции каждому. Оба — общие предметы: достали из духовки, в руке, бросили и подняли, поставили — у обоих одинаково. Каждый ест из своего подноса, напарник видит, сколько на нём осталось.
+- Еда в кровати: напарник сидит (а не лежит), один у изголовья, другой у изножья, не друг в друге.
+- Туалет Маркуса: его мысли субтитрами («После такого плотного ужина мне захотелось в биотуалет», «Как я помню, он находится внизу») вместо белой подсказки; сам туалет — игровой (кликнуть по нему при закрытой двери), и поход раньше той же ночью его больше не блокирует («я закончил»). Тессе в это время приходит мысль, что пора спать.
+- Ночь 5: Маркус не мог встать после того, как встала Тесса (флаг «посмотрел в окно» был общим) — теперь он у каждого свой.
+
 ## 0.7.2 — playtest fixes: Connor's talks on the balcony, back from the campfire / исправления по плейтесту
 
 Works together with 0.7.0 and 0.7.1 (same protocol), but update both for the fixes. / Совместима с 0.7.0 и 0.7.1, но для исправлений обновитесь оба.

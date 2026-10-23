@@ -29,6 +29,7 @@ namespace IronbarkCoop
                 else if (code == "intro") Intro(lines);
                 else if (code == "ranger") Ranger(lines);
                 else if (code == "casserole") Casserole(lines);
+                else if (code.StartsWith("story:") && StorySync.Instance != null) lines.AddRange(StorySync.Instance.PoseKeysFor(code.Substring(6)));
                 else if (code.StartsWith("loc:")) { var parts = code.Split(':'); for (int i = 2; i < parts.Length; i++) lines.Add(parts[1] + "/" + parts[i] + " = " + F2FLocalizedText.GetLocalizedText(parts[1], parts[i])); }
             }
             catch (System.Exception ex) { lines.Add("ERROR " + ex); }
@@ -140,6 +141,13 @@ namespace IronbarkCoop
                 + " tag=" + c.tag + " parent=" + (c.transform.parent ? c.transform.parent.name : "-"));
             lines.Add("seq4 convo=" + AccessTools.Field(typeof(WatchTowerManager), "seq4ConvoDone").GetValue(tower) + " texts=" + AccessTools.Field(typeof(WatchTowerManager), "seq4TextsDone").GetValue(tower)
                 + " cooked=" + tower.seq4FoodCooked + " eaten=" + tower.seq4FoodEaten + " inStove=" + tower.seq4CasseroleInsideStove + " ovenLocked=" + tower.seq4OvenLocked + " report=" + tower.seq4ReportDone);
+            foreach (var tray in Object.FindObjectsOfType<Casserole>(true))
+                lines.Add("tray " + ItemSync.PathOf(tray.transform) + " at=" + V(tray.transform.position) + " active=" + tray.gameObject.activeInHierarchy + " finished=" + tray.finishedInt + " key=" + Plugin.Instance?.Items.KeyOf(tray.gameObject) + " mine=" + (tray == c));
+            if (tower.casseroleParent) lines.Add("casseroleParent " + ItemSync.PathOf(tower.casseroleParent) + " at=" + V(tower.casseroleParent.position));
+            var rig = tower.playerInBedEating;
+            if (rig) { var cam = rig.GetComponentInChildren<Camera>(true); lines.Add("eatingRig " + ItemSync.PathOf(rig.transform) + " at=" + V(rig.transform.position) + " yaw=" + rig.transform.eulerAngles.y.ToString("F0") + " active=" + rig.activeInHierarchy + " cam=" + (cam ? V(cam.transform.position) + " camYaw=" + cam.transform.eulerAngles.y.ToString("F0") : "-")); }
+            if (tower.bed) lines.Add("bed at=" + V(tower.bed.transform.position) + " yaw=" + tower.bed.transform.eulerAngles.y.ToString("F0") + " bounds=" + (tower.bed.TryGetComponent<Collider>(out var bc) ? bc.bounds.ToString() : "-") + " bedCam=" + (tower.bedCam ? V(tower.bedCam.transform.position) : "-"));
+            if (tower.insideStovePosition) lines.Add("oven at=" + V(tower.insideStovePosition.transform.position));
         }
     }
 }

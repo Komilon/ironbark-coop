@@ -12,7 +12,7 @@ namespace IronbarkCoop
     public sealed class Packet
     {
         public string kind, scene, code, build;
-        public const int Protocol = 8;
+        public const int Protocol = 9;
         public int version = Protocol;
         public Vector3 position;
         public Quaternion rotation;
@@ -103,7 +103,7 @@ namespace IronbarkCoop
         }
     }
 
-    [BepInPlugin("astra.ironbark.coop", "Ironbark Cooperative", "0.7.2")]
+    [BepInPlugin("astra.ironbark.coop", "Ironbark Cooperative", "0.8.0")]
     public sealed class Plugin : BaseUnityPlugin
     {
         internal static Plugin Instance;
@@ -413,6 +413,7 @@ namespace IronbarkCoop
             Beds.Tick();
             Dream.Tick();
             Trip.Tick();
+            SupperSync.Tick();
             Errand.Tick();
             Sleep.Tick();
             AnchorSeatedPartner();
@@ -821,6 +822,10 @@ namespace IronbarkCoop
                     if (p.kind == "dlg-pick") Talk.LabPick(p.arg);
                     if (p.kind == "trip-pick") Trip.LabPick(p.arg);
                     if (p.kind == "errand-begin") Errand.LabBegin();
+                    if (p.kind == "lab-take-tray") SupperSync.LabTake(p.arg);
+                    if (p.kind == "lab-dish-oven") SupperSync.LabDishInOven();
+                    if (p.kind == "lab-pee" && GameManager.instance.watchTowerManager) { var tw = GameManager.instance.watchTowerManager; tw.seqPeed = true; tw.seq7peeTrigger.StartPee(); Logger.LogInfo("LAB_PEE"); }
+                    if (p.kind == "lab-bake" && GameManager.instance.watchTowerManager) GameManager.instance.watchTowerManager.casserole.FinishBaking();
                     if (p.kind == "lab-eat-dish" && GameManager.instance && GameManager.instance.watchTowerManager && GameManager.instance.watchTowerManager.casserole) { var dish = GameManager.instance.watchTowerManager.casserole; dish.isEating = false; dish.Eat(); Logger.LogInfo("LAB_EAT_DISH " + dish.finishedInt); }
                     if (p.kind == "lab-race") TowerChairPatch.LabRace = p.active;
                     if (p.kind == "lab-take-torch" && GameManager.instance && GameManager.instance.itemPickUp && !GameManager.instance.itemPickUp.inHandFlashlight)

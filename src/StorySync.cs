@@ -17,13 +17,13 @@ namespace IronbarkCoop
     {
         // Player-local state and scare machinery never leaves the instance that produced it.
         static readonly Regex PersonalField = new Regex(
-            @"^(state|isPlayerInside|wasOutside|insideShack|pointingAtBed|inPee\w*|peed|seqPeed|seqCanPee|seq7Peed|seq7CanPee|blink\d+once|sips|clicks|seq3Next\w+|seq\dCanGetOff|seq5CanGetOutOfBed|mounted|canMount|inMountArea|isStairsFootstepsPlaying|seq8ShiftSubOn|seq8SeenUnderBed|seq6PlayerInConvoTrigger|seq6TalkingTo\w+" +
+            @"^(state|isPlayerInside|wasOutside|insideShack|pointingAtBed|inPee\w*|peed|seqPeed|seqCanPee|seq7Peed|seq7CanPee|blink\d+once|sips|clicks|seq3Next\w+|seq\dCanGetOff|seq5CanGetOutOfBed|seq5HarpPlayed|seq5AmbStopped|seq5LowDeepPlayed|mounted|canMount|inMountArea|isStairsFootstepsPlaying|seq8ShiftSubOn|seq8SeenUnderBed|seq6PlayerInConvoTrigger|seq6TalkingTo\w+" +
             // Where each player is and what they sit on: the diner door, booths, the washroom, conversations, the RV.
             @"|dinerState|playerLockedToSeat|playerSittingFirstTime|bagInhand|inConversation|isPlayerInsideTheRV|playerCaught)$" +
             @"|(?i)jump|haunt|farscare|closejump|chas|lookatcultist|cultist(walking|waiting|onscreen)|onscreen|cultseen|flashwentoff|skullseen",
             RegexOptions.Compiled);
         static readonly Regex PersonalObject = new Regex(
-            @"(?i)jump|cultist|crowd|badguy|deadguy|scare|hunt|chase|blood|anomaly|blur|vhs|grain|distortion|dream|cam$|cam\d|camera|fov|shake|heart|glitch|scream|stab|underbed|rainpro|player|binocularsmodel|flashlight|^bag$|itemhere",
+            @"(?i)jump|cultist|crowd|badguy|deadguy|scare|hunt|chase|blood|anomaly|blur|vhs|grain|distortion|dream|cam$|cam\d|camera|fov|shake|heart|glitch|scream|stab|underbed|rainpro|player|binocularsmodel|flashlight|^bag$|itemhere|^casserole parent$",
             RegexOptions.Compiled);
         static readonly HashSet<string> StatefulComponents = new HashSet<string> { "TowerSunBlind" };
         static readonly Regex PersonalTag = new Regex(@"(?i)lightswitchcollider|blind", RegexOptions.Compiled);
@@ -149,6 +149,7 @@ namespace IronbarkCoop
         readonly List<Entry> entries = new List<Entry>();
         readonly Dictionary<string, Entry> byKey = new Dictionary<string, Entry>();
         readonly List<PoseEntry> poses = new List<PoseEntry>();
+        internal IEnumerable<string> PoseKeysFor(string text) { foreach (var p in poses) if (p.Target && p.Target.name.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0) yield return p.Key + " -> " + ItemSync.PathOf(p.Target); }
         string registeredScene;
         float registerAt = -1, nextTick;
         bool fullStatePending;

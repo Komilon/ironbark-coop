@@ -34,12 +34,30 @@ namespace IronbarkCoop
             if (!rig) return;
             var camera = rig.GetComponentInChildren<Camera>();
             var eye = camera ? camera.transform.position : rig.position;
-            var move = ToHalf(tower, eye, plugin.FollowsStory);
+            // Supper is eaten sitting across the bed, facing the room: one at the head end, the other at the foot.
+            bool eating = rig.gameObject == tower.playerInBedEating;
+            var move = eating ? ToEnd(tower, plugin.FollowsStory) : ToHalf(tower, eye, plugin.FollowsStory);
             if (move == Vector3.zero) return;
             originalPosition = rig.position;
             rig.position += move;
             shifted = rig;
+            // The tray's place on the lap is not always under the rig: it goes along.
+            tray = eating && tower.casseroleParent && !tower.casseroleParent.IsChildOf(rig) ? tower.casseroleParent : null;
+            if (tray) { trayOriginal = tray.position; tray.position += move; }
             Plugin.Log("BED_OTHER_HALF " + rig.name + " moved " + move.magnitude.ToString("F2"));
+        }
+
+        Transform tray;
+        Vector3 trayOriginal;
+        const float EndOfBed = 0.5f;
+
+        // Along the bed, from the pillow toward the foot: Marcus toward the head, Tessa toward the foot.
+        internal static Vector3 ToEnd(WatchTowerManager tower, bool tessa)
+        {
+            if (!tower.bedCam) return Vector3.zero;
+            var along = tower.bed.transform.position - tower.bedCam.transform.position; along.y = 0f;
+            if (along.sqrMagnitude < 0.01f) return Vector3.zero;
+            return along.normalized * (tessa ? EndOfBed : -EndOfBed);
         }
 
         // The move from where the game lays a sleeper to the middle of their half: the game lays you a little to one
@@ -102,7 +120,8 @@ namespace IronbarkCoop
         void Restore()
         {
             if (shifted) shifted.position = originalPosition;
-            shifted = null;
+            if (tray) tray.position = trayOriginal;
+            shifted = null; tray = null;
         }
     }
 }

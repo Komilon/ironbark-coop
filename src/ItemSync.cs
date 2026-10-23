@@ -165,8 +165,10 @@ namespace IronbarkCoop
                 // scene starts in our hands is the team's bag, at the same path in both worlds.
                 bool inHands = IsInLocalHands(transform);
                 if (go.scene != scene || !IsShared(go.tag, scene.name) || (inHands && !(go.CompareTag("Bag") && go.activeInHierarchy))) continue;
-                // A baked casserole is a portion for each player (night 4's supper, night 6's leftovers).
+                // A baked casserole is a portion for each player (night 6's leftovers; night 4's two trays are made shared).
                 if (go.CompareTag("Casserole") && go.TryGetComponent<Casserole>(out var dish) && SupperSync.Baked(dish)) continue;
+                // Only the dish itself: the places a dish is put (on the lap in bed, in the microwave) carry its tag too.
+                if (go.CompareTag("Casserole") && !go.GetComponent<Casserole>()) continue;
                 // The registration path is the identity; both players load the same scene layout.
                 string key = go.tag + ":" + PathOf(transform);
                 if (byKey.ContainsKey(key)) continue;
@@ -308,11 +310,23 @@ namespace IronbarkCoop
         {
             var transform = item.Target.transform;
             item.LastPose = Pose(transform) + (item.Target.activeSelf ? ",1" : ",0");
+            // On something only this player has in that place (the tray on the lap while eating in bed, where each sits
+            // on their own end): where it is in the world, not the partner's copy of that rig.
+            bool personal = transform.parent && OnPersonalRig(transform.parent);
             plugin.Send(new Packet {
                 kind = "item", code = "place", name = item.Key, scene = registeredScene,
-                build = transform.parent ? PathOf(transform.parent) : "",
-                position = transform.localPosition, rotation = transform.localRotation, active = item.Target.activeSelf
+                build = transform.parent && !personal ? PathOf(transform.parent) : "",
+                position = personal ? transform.position : transform.localPosition, rotation = personal ? transform.rotation : transform.localRotation, active = item.Target.activeSelf
             });
+        }
+
+        static bool OnPersonalRig(Transform parent)
+        {
+            var tower = GameManager.instance ? GameManager.instance.watchTowerManager : null;
+            if (!tower) return false;
+            foreach (var rig in new[] { tower.playerInBedEating, tower.playerInBed, tower.playerInBedSeq5 })
+                if (rig && parent.IsChildOf(rig.transform)) return true;
+            return false;
         }
 
         public void Receive(Packet packet)
@@ -360,6 +374,18 @@ namespace IronbarkCoop
                     break;
             }
         }
+
+        // An object made at runtime in both worlds (night 4's second portion): shared under a key both sides agree on.
+        internal void AddShared(GameObject target, string key)
+        {
+            if (!target || byKey.ContainsKey(key)) return;
+            var item = new Item { Key = key, Target = target, LastPose = Pose(target.transform) + (target.activeSelf ? ",1" : ",0") };
+            items.Add(item); byKey[key] = item;
+            Plugin.Log("ITEM_SHARED " + key);
+        }
+
+        internal string KeyOf(GameObject target) => items.Find(i => i.Target == target)?.Key;
+        internal GameObject Find(string key) => key != null && byKey.TryGetValue(key, out var item) ? item.Target : null;
 
         // From now on the object is each player's own (the partner has one of their own in their world).
         internal void MakePersonal(GameObject target)

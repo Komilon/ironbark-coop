@@ -34,9 +34,24 @@ namespace IronbarkCoop
                 packet.steer = DinerSync.SeatYaw(booth);
                 return;
             }
-            // In the tower bed: lying, head on the pillow where the bed camera rests, feet toward the foot of the bed.
             var camera = Camera.main;
             var tower = gm ? gm.watchTowerManager : null;
+            // Supper on the bed (night 4): sitting with the tray on the lap, not lying (playtest report).
+            if (camera && tower && tower.playerInBedEating && tower.playerInBedEating.activeInHierarchy)
+            {
+                var eye = camera.transform;
+                // The body faces the way the eating rig sits; looking around turns only the head.
+                packet.active = true;
+                packet.sit = true;
+                packet.seat = "cam";
+                packet.eye = eye.position;
+                packet.position = eye.position - Vector3.up * BoothEyeHeight;
+                packet.rotation = Quaternion.Euler(0f, eye.eulerAngles.y, 0f);
+                packet.pitch = Mathf.DeltaAngle(0f, eye.eulerAngles.x);
+                packet.steer = tower.playerInBedEating.transform.eulerAngles.y;
+                return;
+            }
+            // In the tower bed: lying, head on the pillow where the bed camera rests, feet toward the foot of the bed.
             if (camera && tower && tower.bed && BedSync.InBed(tower))
             {
                 var eyePoint = camera.transform.position;

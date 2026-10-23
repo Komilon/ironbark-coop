@@ -45,17 +45,21 @@ namespace IronbarkCoop
                     if (Ate && SupperSync.PartnerAte && Up && tower.state == WatchTowerManager.State.Inside) Begin(4f);
                     break;
                 case Step.NeedToGo:
-                    if (Time.unscaledTime < stepAt) break;
-                    if (stepAt > 0f) { stepAt = 0f; Think(ConnectionPanel.L("Ох... После такого ужина надо бы сходить в туалет.", "Oh... After a supper like that I need the toilet."), 5f); }
-                    Hint(ConnectionPanel.L("Сходить в биотуалет внизу", "Go to the porta-potty downstairs"));
-                    var potty = tower.portaPotty;
-                    if (potty && potty.isPlayerInside && !OuthouseSync.IsOpen(potty)) { step = Step.Relieving; stepAt = Time.unscaledTime + 0.8f; Hint(""); }
+                    // His thoughts (the game's subtitles), one after the other. The toilet itself is the game's own: in the
+                    // porta-potty with the door shut, a click on it (seq7peeTrigger) and the game does the rest.
+                    if (thought < 2 && Time.unscaledTime >= stepAt)
+                    {
+                        Think(thought == 0 ? ConnectionPanel.L("После такого плотного ужина мне захотелось в биотуалет.", "After a supper like that I need the porta-potty.")
+                            : ConnectionPanel.L("Как я помню, он находится внизу.", "As I remember, it's downstairs."), 4.5f);
+                        thought++; stepAt = Time.unscaledTime + 5f;
+                    }
+                    if (tower.seqPeed) { step = Step.Relieving; Plugin.Log("ERRAND_RELIEVING"); }
                     break;
                 case Step.Relieving:
-                    if (tower.portaPotty && (!tower.portaPotty.isPlayerInside || OuthouseSync.IsOpen(tower.portaPotty))) { step = Step.NeedToGo; break; }
-                    if (Time.unscaledTime < stepAt) break;
-                    plugin.StartCoroutine(Relieve(tower.portaPotty));
-                    step = Step.Relieved; leftPottyAt = -1f; stepAt = float.MaxValue;
+                    if (tower.seq7peeTrigger && tower.seq7peeTrigger.isPeeing) break;
+                    Think(ConnectionPanel.L("Так-то лучше. Теперь можно и спать.", "That's better. Now for bed."), 3f);
+                    step = Step.Relieved; leftPottyAt = -1f; stepAt = Time.unscaledTime;
+                    Plugin.Log("ERRAND_RELIEVED");
                     break;
                 case Step.Relieved:
                     if (Time.unscaledTime < stepAt) break;
@@ -69,14 +73,19 @@ namespace IronbarkCoop
             }
         }
 
+        int thought;
         void Begin(float delay)
         {
-            step = Step.NeedToGo; stepAt = Time.unscaledTime + delay;
+            step = Step.NeedToGo; stepAt = Time.unscaledTime + delay; thought = 0;
+            // The game lets each night's toilet be used once ("I was done with it"): a visit earlier tonight is not this one.
+            var tower = Tower;
+            if (tower) tower.seqPeed = false;
+            // Tessa may go to bed meanwhile.
+            plugin.Send(new Packet { kind = "errand", code = "begin", scene = SceneManager.GetActiveScene().name });
             Plugin.Log("ERRAND_BEGIN");
         }
 
         static void Think(string text, float seconds) => Gm.subtitle.ShowSubAndClose(text, seconds);
-        static void Hint(string text) { if (Gm.uIManager && Gm.uIManager.controlsText.text != text) Gm.uIManager.controlsText.text = text; }
 
         // Going to sleep (night 4 ends with FadeToSleep(5)) waits for the errand. False: not now.
         internal bool AllowsSleep(int nextSeq)
@@ -92,26 +101,6 @@ namespace IronbarkCoop
             Think(step == Step.Flicker ? ConnectionPanel.L("Сначала проверю, что там в гараже.", "First I'll check what's going on in the garage.")
                 : ConnectionPanel.L("Сначала схожу в туалет.", "The toilet first."), 3f);
             return false;
-        }
-
-        IEnumerator Relieve(PortaPotty potty)
-        {
-            Plugin.Log("ERRAND_RELIEVING");
-            var clip = Clip("peeing toilet");
-            AudioSource source = null;
-            if (clip && potty)
-            {
-                source = new GameObject("Coop errand sound").AddComponent<AudioSource>();
-                source.transform.position = potty.transform.position + Vector3.up;
-                source.clip = clip; source.spatialBlend = 1f; source.minDistance = 1f; source.maxDistance = 8f; source.volume = 0.7f;
-                source.outputAudioMixerGroup = potty.doorAS ? potty.doorAS.outputAudioMixerGroup : null;
-                source.Play();
-            }
-            yield return new WaitForSeconds(6f);
-            if (source) { for (float t = 0f; t < 1f && source; t += Time.deltaTime) { source.volume = Mathf.Lerp(0.7f, 0f, t); yield return null; } if (source) Object.Destroy(source.gameObject); }
-            Think(ConnectionPanel.L("Так-то лучше. Теперь можно и спать.", "That's better. Now for bed."), 3f);
-            stepAt = Time.unscaledTime;
-            Plugin.Log("ERRAND_RELIEVED");
         }
 
         static AudioClip Clip(string name)
@@ -278,8 +267,17 @@ namespace IronbarkCoop
         {
             var tower = Tower;
             if (packet.scene != SceneManager.GetActiveScene().name || !tower) return;
-            if (packet.code == "flicker-on") { StartFlicker(tower); Plugin.Log("ERRAND_FLICKER_SEEN"); }
+            if (packet.code == "begin") { if (tower.casserole && tower.casserole.finishedInt >= 4) plugin.StartCoroutine(TimeForBed()); }
+            else if (packet.code == "flicker-on") { StartFlicker(tower); Plugin.Log("ERRAND_FLICKER_SEEN"); }
             else if (packet.code == "flicker-off") StopFlicker(tower);
+        }
+
+        // Tessa's side while Marcus is at the toilet: she can go to bed (and lie waiting for him).
+        IEnumerator TimeForBed()
+        {
+            yield return new WaitForSeconds(6f);
+            if (Gm && !Gm.isConversing) Think(ConnectionPanel.L("Думаю, пора ложиться спать.", "I think it's time for bed."), 4f);
+            Plugin.Log("ERRAND_PARTNER_BEDTIME");
         }
 
         public void PartnerLeft()

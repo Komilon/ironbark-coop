@@ -37,9 +37,9 @@ namespace IronbarkCoop
         // Calm nights only: hunts (5, 8) and the scripted power cut (7) keep their original pacing; night 1 is the
         // first evening's chain of story tasks (a chore there undid them: the stove the story just lit, the blinds the
         // bed needs shut), night 2 is Tessa's while Marcus dreams, and the day after it (3) is daylight and the hike to the
-        // campers (a cold stove or a stalled generator there made no sense).
-        static bool CalmNight(WatchTowerManager tower) =>
-            tower.seq == WatchTowerManager.Seq.Seq4 || tower.seq == WatchTowerManager.Seq.Seq6;
+        // campers (a cold stove or a stalled generator there made no sense). Night 4 has its own evening (supper, Marcus's
+        // errand, the stove burning and the boards as the day left them; playtest: the stove chore broke it).
+        static bool CalmNight(WatchTowerManager tower) => tower.seq == WatchTowerManager.Seq.Seq6;
 
         public void Tick()
         {
@@ -127,7 +127,7 @@ namespace IronbarkCoop
         }
 
         // Power loss from the generator only; unlike PowerOut it does not seat or move the player.
-        static void StallGenerator(WatchTowerManager tower)
+        internal static void StallGenerator(WatchTowerManager tower)
         {
             tower.isGeneratorOn = false;
             tower.redLight.SetActive(true);
@@ -148,7 +148,7 @@ namespace IronbarkCoop
             tower.tubeLightMaterial.DisableKeyword("_EMISSION");
         }
 
-        static void PutOutStove(WatchTowerManager tower)
+        internal static void PutOutStove(WatchTowerManager tower)
         {
             tower.fireStove.Stop(true);
             tower.fireAS.Stop();
@@ -176,7 +176,7 @@ namespace IronbarkCoop
             }
         }
 
-        static void OpenWoodPile(WatchTowerManager tower)
+        internal static void OpenWoodPile(WatchTowerManager tower)
         {
             tower.canPickUpWood = true;
             if (tower.woodStorage && tower.woodStorage.TryGetComponent<BoxCollider>(out var collider)) collider.enabled = true;
@@ -199,6 +199,13 @@ namespace IronbarkCoop
 
         IEnumerator RestartGenerator(WatchTowerManager tower)
         {
+            yield return Restart(tower);
+            fixing = false;
+        }
+
+        // The game's own restart (its fade and StartGenerator).
+        internal static IEnumerator Restart(WatchTowerManager tower)
+        {
             var ui = GameManager.instance.uIManager;
             yield return ui.StartCoroutine(ui.FadeStartGenerator());
             // FadeStartGenerator brings back lamp and floodlights; the room lights follow the wall switch.
@@ -208,7 +215,6 @@ namespace IronbarkCoop
                 tower.tubeLight.SetActive(true);
                 tower.tubeLightMaterial.EnableKeyword("_EMISSION");
             }
-            fixing = false;
         }
 
         static void Notice(string text)
