@@ -103,7 +103,7 @@ namespace IronbarkCoop
         }
     }
 
-    [BepInPlugin("astra.ironbark.coop", "Ironbark Cooperative", "0.7.1")]
+    [BepInPlugin("astra.ironbark.coop", "Ironbark Cooperative", "0.7.2")]
     public sealed class Plugin : BaseUnityPlugin
     {
         internal static Plugin Instance;
@@ -513,6 +513,7 @@ namespace IronbarkCoop
                 if ((p.scene != SceneManager.GetActiveScene().name || otherNight) && loadingScene != p.scene && Application.CanStreamedLevelBeLoaded(p.scene))
                 {
                     loadingScene = p.scene;
+                    Trip.FollowingScene(p.scene);
                     // Join the partner's night, the same way the main menu's Continue does.
                     // The night matters for the tower (and the evening card before it). Followed elsewhere (the campfire),
                     // the partner reports whatever their tower left in the save (night 1), which must not be applied later.

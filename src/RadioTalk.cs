@@ -236,8 +236,47 @@ namespace IronbarkCoop
                 var tower = Tower;
                 var gm = GameManager.instance;
                 // Asleep and dreaming, Marcus is still "inside" by the tower's flag, but nowhere near the radio.
-                return plugin.Ready && tower && tower.isPlayerInside && !gm.isDead && !(gm.isConversing && !choosing) && !awayThisTalk && !plugin.Dream.Dreaming;
+                return plugin.Ready && tower && InTowerRoom(tower) && !gm.isDead && !(gm.isConversing && !choosing) && !awayThisTalk && !plugin.Dream.Dreaming;
             }
+        }
+
+        // The tower's isPlayerInside is set by the trigger in the doorway, so it goes stale when the game moves the
+        // player without walking through it (the coffee on the balcony after a night in the tower): Connor's talks were
+        // shown on the balcony until Marcus walked in and out once. That trigger is only a strip in the doorway, so the
+        // room is the box around the game's own furniture in it (stove, bed, table, radio), closed by the doorway strip
+        // on the door's side.
+        static WatchTowerManager roomTower;
+        static Bounds room;
+        static bool hasRoom;
+        internal static bool InTowerRoom(WatchTowerManager tower)
+        {
+            if (roomTower != tower) { roomTower = tower; hasRoom = MeasureRoom(tower, out room); }
+            if (!hasRoom) return tower.isPlayerInside;
+            var gm = GameManager.instance;
+            // Lying in bed the walking body is switched off wherever it was left: the bed's camera is where the player is.
+            Vector3 at = gm.playerFP && gm.playerFP.activeInHierarchy ? gm.playerFP.transform.position : Camera.main ? Camera.main.transform.position : gm.playerFP.transform.position;
+            return room.Contains(at);
+        }
+
+        static bool MeasureRoom(WatchTowerManager tower, out Bounds box)
+        {
+            box = default;
+            Transform doorway = null;
+            foreach (var trigger in UnityEngine.Object.FindObjectsOfType<OnTrigger>(true))
+                for (int i = 0; i < trigger.triggerEvent.GetPersistentEventCount(); i++)
+                    if (trigger.triggerEvent.GetPersistentMethodName(i) == nameof(WatchTowerManager.PlayerInside)) doorway = trigger.transform;
+            var things = new[] { tower.woodStovePosition ? tower.woodStovePosition.gameObject : null, tower.bed, tower.table, tower.radioCollider, tower.computer };
+            if (!doorway || Array.Exists(things, t => !t)) { Plugin.Log("TOWER_ROOM_UNKNOWN"); return false; }
+            var furniture = new Bounds(things[0].transform.position, Vector3.zero);
+            foreach (var t in things) furniture.Encapsulate(t.transform.position);
+            // Half a metre past the furniture to the walls, except on the doorway's side, where the strip is the wall.
+            Vector3 door = doorway.position, min = furniture.min - new Vector3(0.6f, 0f, 0.6f), max = furniture.max + new Vector3(0.6f, 0f, 0.6f);
+            if (door.x <= furniture.min.x) min.x = door.x; else if (door.x >= furniture.max.x) max.x = door.x;
+            if (door.z <= furniture.min.z) min.z = door.z; else if (door.z >= furniture.max.z) max.z = door.z;
+            min.y = door.y - 2f; max.y = door.y + 2.5f;
+            box = new Bounds((min + max) / 2f, max - min);
+            Plugin.Log("TOWER_ROOM " + box);
+            return true;
         }
 
         void ListenTick()
@@ -268,7 +307,7 @@ namespace IronbarkCoop
             if (choosing)
             {
                 // Space steps away from the talk; leaving the tower does too.
-                bool away = Input.GetKeyDown(KeyCode.Space) || (gm.inputHandler && gm.inputHandler.spaceInput) || !Tower || !Tower.isPlayerInside;
+                bool away = Input.GetKeyDown(KeyCode.Space) || (gm.inputHandler && gm.inputHandler.spaceInput) || !Tower || !InTowerRoom(Tower);
                 if (away) { awayThisTalk = true; plugin.Send(new Packet { kind = "dlg", code = "skip", scene = Scene, arg = listenSerial }); CloseListener(true); Plugin.Log("TALK_STEPPED_AWAY"); }
             }
             panel?.Tick();

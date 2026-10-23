@@ -2,6 +2,18 @@
 
 Both players must use the same mod version. / У обоих игроков должна быть одна версия мода.
 
+## 0.7.2 — playtest fixes: Connor's talks on the balcony, back from the campfire / исправления по плейтесту
+
+Works together with 0.7.0 and 0.7.1 (same protocol), but update both for the fixes. / Совместима с 0.7.0 и 0.7.1, но для исправлений обновитесь оба.
+
+**English**
+- Connor's radio talks are shown only to a player who is really in the tower's room. The game's "inside" flag is set by a strip in the doorway and went stale when the game moved the player without walking through it (Marcus with his coffee on the balcony), so Marcus saw and joined Tessa's talks from outside until he walked in and out once.
+- Back from the campfire: whoever stayed behind and napped now wakes up in the tower's bed for the evening of night 4 (Space gets up), instead of being put at the trail beside the partner.
+
+**Русский**
+- Переговоры Коннора видны только тому, кто действительно в комнате вышки. Флаг игры «внутри» ставится полоской в дверном проёме и «залипал», когда игра переносила игрока, минуя дверь (Маркус с кофе на балконе), — поэтому Маркус видел разговоры Тессы и вступал в них снаружи, пока не зайдёт и не выйдет.
+- Возвращение от костра: тот, кто оставался и дремал, теперь просыпается вечером четвёртой ночи в кровати на вышке (Пробел — встать), а не появляется у тропы рядом с напарником.
+
 ## 0.7.1 — playtest fixes: the dream's light, the sunrise photo, the trail head / исправления по плейтесту
 
 Works together with 0.7.0 (same protocol), but update both for the fixes. / Совместима с 0.7.0, но для исправлений обновитесь оба.

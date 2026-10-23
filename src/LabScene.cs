@@ -285,7 +285,7 @@ namespace IronbarkCoop
             if (tower)
             {
                 var pc = ui ? ui.computerManager : null;
-                s += " tstate=" + tower.state + " stoveOpen=" + tower.isStoveOpen + " woodCheck=" + (tower.woodCheck && tower.woodCheck.enabled) + " inside=" + tower.isPlayerInside + " chairTaken=" + TowerSync.ChairTaken + " powerCuts=" + TowerSync.PowerCuts + " genOn=" + tower.isGeneratorOn
+                s += " tstate=" + tower.state + " stoveOpen=" + tower.isStoveOpen + " woodCheck=" + (tower.woodCheck && tower.woodCheck.enabled) + " inside=" + tower.isPlayerInside + " inRoom=" + RadioTalk.InTowerRoom(tower) + " chairTaken=" + TowerSync.ChairTaken + " powerCuts=" + TowerSync.PowerCuts + " genOn=" + tower.isGeneratorOn
                     + " genTag=" + (tower.generator ? tower.generator.tag : "-") + " towerRadio=" + (tower.radio && !tower.radio.isStopped) + " locked=" + tower.isLocked
                     + " pcPassword=" + (pc && pc.passwordEntered) + " pcUpdated=" + (pc && pc.consoleManager && pc.consoleManager.hasUpdated)
                     + " shots=" + plugin.Tower.ShotsSent + "/" + plugin.Tower.ShotsReceived + " pcScreen=" + (pc && pc.screen && pc.screen.activeSelf)

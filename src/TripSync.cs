@@ -35,8 +35,22 @@ namespace IronbarkCoop
         string Went => PartnerIsTessa ? ConnectionPanel.L("ушла", "went") : ConnectionPanel.L("ушёл", "went");
         string WillBeBack => PartnerIsTessa ? ConnectionPanel.L("она вернётся", "she is back") : ConnectionPanel.L("он вернётся", "he is back");
 
+        // The partner is back from the campfire and the evening of night 4 follows: whoever napped wakes up in the bed
+        // instead of being put at the trail beside the partner (the game's own night 4 start).
+        internal static bool NapEndsInBed;
+
+        internal void FollowingScene(string scene)
+        {
+            // Set on the first step (the evening's card); the tower that follows it keeps it until night 4 starts.
+            if (!StayingBehind || scene == "Camping") return;
+            NapEndsInBed = true;
+            Plugin.Log("TRIP_NAP_ENDS_IN_BED " + scene);
+        }
+
         public void SceneLoaded()
         {
+            var scene = SceneManager.GetActiveScene().name;
+            if (scene != "Seq 4 Intro" && scene != "Watchtower") NapEndsInBed = false;
             ClosePanel();
             StayingBehind = false; waiting = false; partnerWaiting = false; choosing = false; napping = false; chore = 0;
         }
@@ -314,6 +328,18 @@ namespace IronbarkCoop
             yield return new WaitForSeconds(1f);
             ui.transitionImage.gameObject.SetActive(false);
             ui.inTransition = false;
+        }
+    }
+
+    [HarmonyPatch(typeof(WatchTowerManager), nameof(WatchTowerManager.Seq4Start))]
+    internal static class NapEndsInBedPatch
+    {
+        static void Postfix()
+        {
+            if (!TripSync.NapEndsInBed) return;
+            TripSync.NapEndsInBed = false;
+            SleepSync.Instance?.WakeInBed();
+            Plugin.Log("TRIP_WOKE_IN_BED");
         }
     }
 
