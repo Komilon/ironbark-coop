@@ -26,7 +26,7 @@ namespace IronbarkCoop
         ListenPanel panel;
         bool cursorWasShown, controllerWasEnabled;
         int chore;
-        public string Debug => (StayingBehind ? "behind/chore" + chore + (napping ? "/napping" : "") : waiting ? "waiting" : choosing ? "choosing" : partnerWaiting ? "partnerWaiting" : "-");
+        public string Debug => (Tower && Tower.laceyTrailTrigger && Tower.laceyTrailTrigger.TryGetComponent<OnTrigger>(out var trail) && !Entered(trail) ? "armed/" : "") + (StayingBehind ? "behind/chore" + chore + (napping ? "/napping" : "") : waiting ? "waiting" : choosing ? "choosing" : partnerWaiting ? "partnerWaiting" : "-");
 
         static GameManager Gm => GameManager.instance;
         static WatchTowerManager Tower => Gm ? Gm.watchTowerManager : null;
@@ -68,15 +68,18 @@ namespace IronbarkCoop
         }
 
         // The trail head (WatchTowerManager.FadeToNextScene, which loads the campfire). True: the game's own code runs.
+        // The trail's trigger fires only once (OnTrigger.onlyOnce): whenever nobody leaves, it is armed again, so walking
+        // back into it asks again.
         internal bool BeforeTrail(WatchTowerManager tower)
         {
             if (!plugin.Ready || tower.seq != WatchTowerManager.Seq.Seq3) return true;
+            Rearm(tower);
             if (StayingBehind)
             {
                 Gm.subtitle.ShowSubAndClose(string.Format(ConnectionPanel.L("{0} {1} к дыму один. Мне нужно остаться на вышке.", "{0} {1} to the smoke alone. I need to stay at the tower."), PartnerName, Went), 4f);
                 return false;
             }
-            if (choosing || waiting) return false;
+            if (choosing || waiting || opening) return false;
             if (partnerWaiting)
             {
                 // Together: one bear spray between the two is enough.
@@ -86,8 +89,25 @@ namespace IronbarkCoop
                 Go();
                 return false;
             }
-            OpenChoice();
+            // Not from inside the trigger's callback: Unity refuses to strip the copied dialogue panel there, and its
+            // answers could not be clicked.
+            opening = true;
+            plugin.StartCoroutine(OpenNextFrame());
             return false;
+        }
+
+        bool opening;
+        IEnumerator OpenNextFrame()
+        {
+            yield return null;
+            opening = false;
+            if (!choosing && !waiting && !StayingBehind && plugin.Ready) OpenChoice();
+        }
+
+        static readonly AccessTools.FieldRef<OnTrigger, bool> Entered = AccessTools.FieldRefAccess<OnTrigger, bool>("entered");
+        static void Rearm(WatchTowerManager tower)
+        {
+            if (tower.laceyTrailTrigger && tower.laceyTrailTrigger.TryGetComponent<OnTrigger>(out var trigger)) Entered(trigger) = false;
         }
 
         static void BearSprayFirst() { Gm.subtitle.ShowSubAndClose(F2FLocalizedText.GetLocalizedText("ep4_subs", "BearSpray")); Plugin.Log("TRIP_NEEDS_SPRAY"); }
@@ -111,7 +131,7 @@ namespace IronbarkCoop
             Gm.isConversing = true;
             panel.ShowLine("", string.Format(ConnectionPanel.L("Подождать {0} или идти к дыму сейчас?", "Wait for {0} or go to the smoke now?"), PartnerName));
             panel.ShowOptions(new[] { string.Format(ConnectionPanel.L("Подождать {0}", "Wait for {0}"), PartnerName), ConnectionPanel.L("Идти сейчас", "Go now") }, 3, Pick);
-            panel.ShowHint(ConnectionPanel.L("[ПРОБЕЛ] Отойти", "[SPACE] Step back"));
+            panel.ShowHint(ConnectionPanel.L("[1] Подождать   [2] Идти сейчас   [ПРОБЕЛ] Отойти", "[1] Wait   [2] Go now   [SPACE] Step back"));
             Plugin.Log("TRIP_CHOICE");
         }
 
@@ -196,6 +216,8 @@ namespace IronbarkCoop
             {
                 panel?.Tick();
                 // Space steps back from the trail head without choosing.
+                if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1)) { Pick(0); return; }
+                if (Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.Keypad2)) { Pick(1); return; }
                 if (Input.GetKeyDown(KeyCode.Space) || (Gm.inputHandler && Gm.inputHandler.spaceInput)) { ClosePanel(); Plugin.Log("TRIP_CHOICE_CLOSED"); }
                 return;
             }

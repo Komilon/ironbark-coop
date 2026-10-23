@@ -2,6 +2,22 @@
 
 Both players must use the same mod version. / У обоих игроков должна быть одна версия мода.
 
+## 0.7.1 — playtest fixes: the dream's light, the sunrise photo, the trail head / исправления по плейтесту
+
+Works together with 0.7.0 (same protocol), but update both for the fixes. / Совместима с 0.7.0, но для исправлений обновитесь оба.
+
+**English**
+- Night 2's dream: the tower light now switches the dream at once and flares — the brightness shoots past its new level and settles back (and the same way down into the dark when switched off).
+- Morning after night 2: Marcus no longer vanishes for Tessa while he takes the photo of the sunrise.
+- Day 3, the trail head: the "wait or go now" answers could not be picked (the panel was made inside the game's trigger, where Unity refuses to strip the copied dialogue logic) — it now opens a moment later, and the answers can also be picked with 1 and 2. Stepping back (Space) left the trail head dead (the game's trigger fires once): it is armed again whenever nobody leaves, so walking back into it asks again.
+- A small error when quitting the game (voice clean-up) is gone.
+
+**Русский**
+- Сон во второй ночи: свет в вышке теперь переключает сон сразу и со вспышкой — яркость проскакивает дальше нового уровня и плавно возвращается (и так же вниз, в темноту, при выключении).
+- Утро после второй ночи: Маркус больше не пропадает для Тессы, пока фотографирует рассвет.
+- День 3, начало тропы: ответы «подождать / идти сейчас» нельзя было выбрать (окно создавалось внутри триггера игры, где Unity не даёт убрать скопированную логику диалога) — теперь оно открывается мгновением позже, а ответы можно выбрать ещё и клавишами 1 и 2. После «Отойти» (Пробел) тропа больше не срабатывала (триггер игры одноразовый): теперь он снова взводится, если никто не ушёл, и при повторном подходе вопрос задаётся снова.
+- Убрана мелкая ошибка при выходе из игры (очистка голоса).
+
 ## 0.7.0 — seventh playtest: the dream, the trail together or alone, night 4's supper and errand / седьмой плейтест
 
 Not compatible with 0.6.x in the same session (network protocol 8): update both. / С 0.6.x в одной игре не работает (протокол 8) — обновитесь оба.

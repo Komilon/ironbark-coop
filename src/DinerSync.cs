@@ -54,7 +54,9 @@ namespace IronbarkCoop
             }
             // Any other seat the game moves the camera to near the body (computer chair, washroom): sit there.
             // Seats the game moves you to from anywhere (the morning coffee chair on the balcony) count wherever you stood.
-            bool knownSeat = tower && tower.playerCoffee && tower.playerCoffee.activeInHierarchy;
+            // Taking the photo of the sunrise after the coffee is done from the same spot (its own camera rig).
+            bool knownSeat = tower && ((tower.playerCoffee && tower.playerCoffee.activeInHierarchy) || (tower.pictureMode && tower.pictureMode.cameraParent && tower.pictureMode.cameraParent.activeInHierarchy));
+            if (tower && tower.pictureMode && tower.pictureMode.cameraParent && tower.pictureMode.cameraParent.activeInHierarchy) { var photo = tower.pictureMode.cameraParent.GetComponentInChildren<Camera>(); if (photo) camera = photo; }
             // The morning coffee is drunk standing at the rail: shown standing there, facing where the player looks.
             if (knownSeat && camera)
             {

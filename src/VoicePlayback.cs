@@ -146,7 +146,7 @@ namespace IronbarkCoop
 
         public void Dispose()
         {
-            source.Stop();
+            if (source) source.Stop();
             buffer.Clear();
             codec.Dispose();
             UnityEngine.Object.Destroy(emitter);

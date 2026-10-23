@@ -123,16 +123,24 @@ namespace IronbarkCoop
         // (and dark again when it is switched off).
         float lightBlend; bool lightWasOn;
         ColorGrading grading; Bloom glow;
+        // The switch flips the dream at once and overshoots: the picture flares past its new brightness and settles back
+        // (e.g. 0 -> 1.2 -> 1.12 -> 1.05 -> 1), and the same way down into the dark.
+        float lightFrom, lightSwitchedAt = -10f;
+        bool peakLogged = true;
+        const float FlareRise = 0.06f, Overshoot = 0.2f, Settle = 4f;
         void TowerLight(WatchTowerManager tower)
         {
             bool on = tower.isLightOn;
-            if (on != lightWasOn) { lightWasOn = on; Plugin.Log("DREAM_LIGHT " + (on ? "on" : "off")); }
-            lightBlend = Mathf.MoveTowards(lightBlend, on ? 1f : 0f, Time.deltaTime / 0.6f);
-            float k = lightBlend * lightBlend * (3f - 2f * lightBlend);
-            if (grading) grading.postExposure.value = Mathf.Lerp(0.2f, 3.4f, k);
-            if (glow) glow.intensity.value = Mathf.Lerp(2f, 7f, k);
-            RenderSettings.fogColor = Color.Lerp(DarkFog, new Color(0.82f, 0.84f, 0.88f), k);
-            RenderSettings.ambientLight = Color.Lerp(DarkAmbient, new Color(0.7f, 0.7f, 0.75f), k);
+            if (on != lightWasOn) { lightWasOn = on; lightFrom = lightBlend; lightSwitchedAt = Time.unscaledTime; peakLogged = false; Plugin.Log("DREAM_LIGHT " + (on ? "on" : "off")); }
+            float to = on ? 1f : 0f, peak = to + Overshoot * (to - lightFrom), t = Time.unscaledTime - lightSwitchedAt;
+            lightBlend = t < FlareRise ? Mathf.Lerp(lightFrom, peak, t / FlareRise) : to + (peak - to) * Mathf.Exp(-(t - FlareRise) * Settle);
+            if (Mathf.Abs(lightBlend - to) < 0.004f) lightBlend = to;
+            if (!peakLogged && t >= FlareRise) { peakLogged = true; Plugin.Log("DREAM_LIGHT_PEAK " + lightBlend.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)); }
+            float k = lightBlend;
+            if (grading) grading.postExposure.value = Mathf.LerpUnclamped(0.2f, 3.4f, k);
+            if (glow) glow.intensity.value = Mathf.Max(0f, Mathf.LerpUnclamped(2f, 7f, k));
+            RenderSettings.fogColor = Color.LerpUnclamped(DarkFog, new Color(0.82f, 0.84f, 0.88f), k);
+            RenderSettings.ambientLight = Color.LerpUnclamped(DarkAmbient, new Color(0.7f, 0.7f, 0.75f), k);
         }
         public string LightDebug => Dreaming ? (lightWasOn ? "on" : "off") + "/" + lightBlend.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) : "-";
         static readonly Color DarkFog = new Color(0.10f, 0.12f, 0.16f), DarkAmbient = new Color(0.10f, 0.11f, 0.14f);
