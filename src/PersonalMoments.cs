@@ -58,6 +58,7 @@ namespace IronbarkCoop
             yield return new WaitForSecondsRealtime(1.2f);
             var tower = gm.watchTowerManager;
             if (tower) ResetTowerScare(tower);
+            Night5Sync.Instance?.AfterRespawn();
             gm.isDead = false;
             if (gm.phone) gm.phone.enabled = true;
             if (gm.cameraShake) gm.cameraShake.enabled = false;

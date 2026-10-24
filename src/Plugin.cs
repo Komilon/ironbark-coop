@@ -12,7 +12,7 @@ namespace IronbarkCoop
     public sealed class Packet
     {
         public string kind, scene, code, build;
-        public const int Protocol = 9;
+        public const int Protocol = 10;
         public int version = Protocol;
         public Vector3 position;
         public Quaternion rotation;
@@ -103,7 +103,7 @@ namespace IronbarkCoop
         }
     }
 
-    [BepInPlugin("astra.ironbark.coop", "Ironbark Cooperative", "0.8.0")]
+    [BepInPlugin("astra.ironbark.coop", "Ironbark Cooperative", "0.9.0")]
     public sealed class Plugin : BaseUnityPlugin
     {
         internal static Plugin Instance;
@@ -122,6 +122,7 @@ namespace IronbarkCoop
         internal DreamSync Dream;
         internal TripSync Trip;
         internal NightErrand Errand;
+        internal Night5Sync Night5;
         internal SleepSync Sleep;
         bool partnerSit;
         int sceneEpoch;
@@ -210,6 +211,7 @@ namespace IronbarkCoop
             Dream = new DreamSync(this);
             Trip = new TripSync(this);
             Errand = new NightErrand(this);
+            Night5 = new Night5Sync(this);
             Sleep = new SleepSync(this);
             Items.RemoteHeldChanged += held => RefreshHeld();
             harmony = new Harmony("astra.ironbark.coop");
@@ -415,6 +417,7 @@ namespace IronbarkCoop
             Trip.Tick();
             SupperSync.Tick();
             Errand.Tick();
+            Night5.Tick();
             Sleep.Tick();
             AnchorSeatedPartner();
             if (authenticated && Time.unscaledTime >= voiceRetryAt)
@@ -498,6 +501,7 @@ namespace IronbarkCoop
             if (p.kind == "trip") { Trip.Receive(p); return; }
             if (p.kind == "supper") { SupperSync.Receive(p); return; }
             if (p.kind == "errand") { Errand.Receive(p); return; }
+            if (p.kind == "cultist") { Night5.Receive(p); return; }
             if (p.kind == "react") { if (p.scene == SceneManager.GetActiveScene().name && avatar != null && avatar.Active) { avatar.React(); Logger.LogInfo("SCARE_REMOTE " + p.code); } return; }
             if (p.kind == "scene")
             {
@@ -704,6 +708,7 @@ namespace IronbarkCoop
             Dream.SceneLoaded();
             Trip.SceneLoaded();
             Errand.SceneLoaded();
+            Night5.SceneLoaded();
             SupperSync.SceneLoaded();
             Sleep.SceneLoaded();
             hasLastFeet = false;

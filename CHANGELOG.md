@@ -2,6 +2,20 @@
 
 Both players must use the same mod version. / У обоих игроков должна быть одна версия мода.
 
+## 0.9.0 — night 5 with one cultist for both, one answer at the trail head / пятая ночь с одним культистом на двоих, один ответ у тропы
+
+Protocol 10: both players need 0.9.0. / Протокол 10: обоим нужна 0.9.0.
+
+**English**
+- Night 5: one cultist for both. The figure with the flashlight at the window, his round on the balcony, the ritual and his way down run in Marcus's world, and Tessa sees the very same (his pose, animation and sounds). What Tessa does reaches him too: her look at the window starts him walking, opening the door makes him stop and wait or hide. The flashlight in the window goes out for both when either looks at it from the bed. Getting up after looking at the window is each player's own.
+- Scares stay personal, as in Scratch Creek: whoever makes him notice them is hunted in their own world, and the partner sees him run at them. After a death (the lone respawn) he is gone for the night and leaves the skull on the balcony, so the night goes on to Connor's talk and bed.
+- Day 3, the trail head: whoever comes first waits for the partner straight away; the panel has one answer, "Go right away". The partner reaching the trail head meanwhile takes both down it. The white key hints are gone; Space still steps back.
+
+**Русский**
+- Ночь 5: один культист на двоих. Силуэт с фонарём в окне, его обход балкона, ритуал и уход вниз происходят в мире Маркуса, а Тесса видит ровно то же (позу, анимацию, звуки). Действия Тессы тоже доходят до него: её взгляд в окно трогает его с места, открытая ею дверь заставляет его замереть или спрятаться. Фонарь в окне гаснет у обоих, когда любой посмотрит на него с кровати. Встать после взгляда в окно — у каждого своё.
+- Испуги личные, как в Scratch Creek: на кого он обратил внимание, за тем он и гонится в его мире, а напарник видит, как культист бежит к нему. После гибели (возрождение в одиночку) он уходит на всю ночь и оставляет череп на балконе — ночь продолжается разговором с Коннором и сном.
+- День 3, начало тропы: кто пришёл первым, сразу ждёт напарника; в окне один ответ — «Идти сразу». Если напарник за это время дошёл до тропы, идёте вдвоём. Белых подсказок с клавишами больше нет; Пробел по-прежнему — отойти.
+
 ## 0.8.0 — playtest fixes: chores for whoever stays, two trays at supper, Marcus's errand the game's way / исправления по плейтесту
 
 Protocol 9: both players need 0.8.0. / Протокол 9: обоим нужна 0.8.0.

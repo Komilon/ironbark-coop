@@ -22,6 +22,8 @@ namespace IronbarkCoop
             @"|dinerState|playerLockedToSeat|playerSittingFirstTime|bagInhand|inConversation|isPlayerInsideTheRV|playerCaught)$" +
             @"|(?i)jump|haunt|farscare|closejump|chas|lookatcultist|cultist(walking|waiting|onscreen)|onscreen|cultseen|flashwentoff|skullseen",
             RegexOptions.Compiled);
+        // Night 5's cultist is one for both (Night5Sync): where he is in his round is shared, not each world's own.
+        static readonly HashSet<string> SharedCultist = new HashSet<string> { "seq5CultistWalking", "seq5CultistWaiting" };
         static readonly Regex PersonalObject = new Regex(
             @"(?i)jump|cultist|crowd|badguy|deadguy|scare|hunt|chase|blood|anomaly|blur|vhs|grain|distortion|dream|cam$|cam\d|camera|fov|shake|heart|glitch|scream|stab|underbed|rainpro|player|binocularsmodel|flashlight|^bag$|itemhere|^casserole parent$",
             RegexOptions.Compiled);
@@ -208,7 +210,7 @@ namespace IronbarkCoop
                         || (type == typeof(float) && SharedFloat.IsMatch(field.Name));
                     if (scalar)
                     {
-                        if (!PersonalField.IsMatch(field.Name)) Add(new FieldEntry { Key = "F:" + key, Owner = manager, Field = field });
+                        if (!PersonalField.IsMatch(field.Name) || SharedCultist.Contains(field.Name)) Add(new FieldEntry { Key = "F:" + key, Owner = manager, Field = field });
                         continue;
                     }
                     if (PersonalObject.IsMatch(field.Name)) continue;

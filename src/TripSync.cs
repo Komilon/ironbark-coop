@@ -22,11 +22,10 @@ namespace IronbarkCoop
         public bool StayingBehind { get; private set; }
         public bool Napping => napping;
         bool waiting, partnerWaiting, choosing, napping;
-        Vector3 waitAt;
         ListenPanel panel;
         bool cursorWasShown, controllerWasEnabled;
         int chore;
-        public string Debug => (Tower && Tower.laceyTrailTrigger && Tower.laceyTrailTrigger.TryGetComponent<OnTrigger>(out var trail) && !Entered(trail) ? "armed/" : "") + (StayingBehind ? "behind/chore" + chore + (napping ? "/napping" : "") : waiting ? "waiting" : choosing ? "choosing" : partnerWaiting ? "partnerWaiting" : "-");
+        public string Debug => (Tower && Tower.laceyTrailTrigger && Tower.laceyTrailTrigger.TryGetComponent<OnTrigger>(out var trail) && !Entered(trail) ? "armed/" : "") + (StayingBehind ? "behind/chore" + chore + (napping ? "/napping" : "") : waiting ? "waiting" + (choosing ? "/asked" : "") : choosing ? "choosing" : partnerWaiting ? "partnerWaiting" : "-");
 
         static GameManager Gm => GameManager.instance;
         static WatchTowerManager Tower => Gm ? Gm.watchTowerManager : null;
@@ -137,6 +136,8 @@ namespace IronbarkCoop
             Gm.uIManager.FadeOut("Camping");
         }
 
+        // At the trail head: waiting for the partner at once, in the game's dialogue panel, with one answer, "go now".
+        // The partner reaching the trail head meanwhile takes both down it; Space steps back (no longer waiting).
         void OpenChoice()
         {
             panel = ListenPanel.Create();
@@ -147,9 +148,10 @@ namespace IronbarkCoop
             cursorWasShown = Cursor.visible;
             Gm.ShowCursor();
             Gm.isConversing = true;
-            panel.ShowLine("", string.Format(ConnectionPanel.L("Подождать {0} или идти к дыму сейчас?", "Wait for {0} or go to the smoke now?"), PartnerName));
-            panel.ShowOptions(new[] { string.Format(ConnectionPanel.L("Подождать {0}", "Wait for {0}"), PartnerName), ConnectionPanel.L("Идти сейчас", "Go now") }, 3, Pick);
-            panel.ShowHint(ConnectionPanel.L("[1] Подождать   [2] Идти сейчас   [ПРОБЕЛ] Отойти", "[1] Wait   [2] Go now   [SPACE] Step back"));
+            panel.ShowLine("", string.Format(ConnectionPanel.L("Подожду {0} здесь, у тропы. Или идти к дыму сразу?", "I'll wait for {0} here at the trail. Or go to the smoke right away?"), PartnerName));
+            panel.ShowOptions(new[] { ConnectionPanel.L("Идти сразу", "Go right away") }, 1, Pick);
+            panel.ShowHint(ConnectionPanel.L("[ПРОБЕЛ] Отойти", "[SPACE] Step back"));
+            StartWaiting();
             Plugin.Log("TRIP_CHOICE");
         }
 
@@ -168,20 +170,19 @@ namespace IronbarkCoop
         void Pick(int index)
         {
             if (!choosing) return;
+            // Going alone needs the bear spray in hand (the game's rule): the question stays open without it.
+            if (!Gm.itemPickUp.inHandSpray) { BearSprayFirst(); return; }
             ClosePanel();
-            if (index == 0) StartWaiting();
-            else GoAlone();
+            GoAlone();
         }
 
-        // The lab picks an answer like a click would.
+        // The lab picks the answer like a click would.
         internal void LabPick(int index) { if (choosing) Pick(index); }
 
         void StartWaiting()
         {
             waiting = true;
-            waitAt = Gm.playerFP.transform.position;
             plugin.Send(new Packet { kind = "trip", code = "wait", scene = SceneManager.GetActiveScene().name });
-            Gm.subtitle.ShowSubAndClose(string.Format(ConnectionPanel.L("Подожду {0} здесь, у тропы.", "I'll wait for {0} here at the trail."), PartnerName), 3f);
             Plugin.Log("TRIP_WAITING");
         }
 
@@ -225,6 +226,7 @@ namespace IronbarkCoop
                 case "unwait": partnerWaiting = false; break;
                 case "together":
                     // The partner came: the campfire scene follows from their side.
+                    if (choosing) ClosePanel();
                     if (waiting) StopWaiting(false);
                     Plugin.Log("TRIP_PARTNER_CAME");
                     break;
@@ -245,20 +247,12 @@ namespace IronbarkCoop
             if (choosing)
             {
                 panel?.Tick();
-                // Space steps back from the trail head without choosing.
-                if (Input.GetKeyDown(KeyCode.Alpha1) || Input.GetKeyDown(KeyCode.Keypad1)) { Pick(0); return; }
-                if (Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.Keypad2)) { Pick(1); return; }
-                if (Input.GetKeyDown(KeyCode.Space) || (Gm.inputHandler && Gm.inputHandler.spaceInput)) { ClosePanel(); Plugin.Log("TRIP_CHOICE_CLOSED"); }
+                // Space steps back from the trail head: no longer waiting.
+                bool away = Input.GetKeyDown(KeyCode.Space) || (Gm.inputHandler && Gm.inputHandler.spaceInput) || !plugin.Ready;
+                if (away) { ClosePanel(); if (waiting) StopWaiting(plugin.Ready); Plugin.Log("TRIP_CHOICE_CLOSED"); }
                 return;
             }
-            if (waiting)
-            {
-                var hint = string.Format(ConnectionPanel.L("Ждём {0} у тропы. [ПРОБЕЛ] Идти сейчас", "Waiting for {0} at the trail. [SPACE] Go now"), PartnerName);
-                if (Gm.uIManager && Gm.uIManager.controlsText.text != hint && !Gm.uIManager.inTransition) Gm.uIManager.controlsText.text = hint;
-                if (!plugin.Ready || (Gm.playerFP && Vector3.Distance(Gm.playerFP.transform.position, waitAt) > 8f)) { StopWaiting(true); Plugin.Log("TRIP_WAIT_LEFT"); }
-                else if (Input.GetKeyDown(KeyCode.Space) || (Gm.inputHandler && Gm.inputHandler.spaceInput)) GoAlone();
-                return;
-            }
+            if (waiting) StopWaiting(plugin.Ready);
             if (StayingBehind) Chores();
         }
 
