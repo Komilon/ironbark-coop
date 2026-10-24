@@ -24,27 +24,25 @@ function Find-Game {
     return $null
 }
 
-Write-Host 'Ironbark Coop __VERSION__ - установка / install' -ForegroundColor Cyan
+Write-Host 'Ironbark Coop __VERSION__ - install' -ForegroundColor Cyan
 if (!$GamePath) { $GamePath = Find-Game }
 if (!$GamePath -or !(Test-Path (Join-Path $GamePath $exeName))) {
-    $GamePath = (Read-Host 'Папка игры не найдена. Вставьте путь к папке с "Fears to Fathom - Ironbark Lookout.exe" / Paste the game folder').Trim('"', ' ')
+    $GamePath = (Read-Host 'Game folder not found. Paste the path to the folder with "Fears to Fathom - Ironbark Lookout.exe"').Trim('"', ' ')
 }
-if (!(Test-Path (Join-Path $GamePath $exeName))) { throw "В папке нет $exeName / Game executable not found: $GamePath" }
+if (!(Test-Path (Join-Path $GamePath $exeName))) { throw "Game executable not found: $GamePath" }
 $full = (Resolve-Path $GamePath).Path
-if (Get-Process -Name 'Fears to Fathom - Ironbark Lookout' -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path.StartsWith($full, [StringComparison]::OrdinalIgnoreCase) }) { throw 'Закройте игру перед установкой / Close the game first.' }
+if (Get-Process -Name 'Fears to Fathom - Ironbark Lookout' -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path.StartsWith($full, [StringComparison]::OrdinalIgnoreCase) }) { throw 'Close the game first.' }
 
-Write-Host "Папка игры / Game folder: $GamePath"
+Write-Host "Game folder: $GamePath"
 Copy-Item -Path (Join-Path $package 'game\*') -Destination $GamePath -Recurse -Force
 $assembly = Join-Path $GamePath 'Fears to Fathom - Ironbark Lookout_Data\Managed\Assembly-CSharp.dll'
 $hash = (Get-FileHash $assembly -Algorithm SHA256).Hash
-Write-Host 'Установлено / Installed.' -ForegroundColor Green
+Write-Host 'Installed.' -ForegroundColor Green
 Write-Host ''
-Write-Host "Код версии игры / Game build code: $($hash.Substring(0, 12))" -ForegroundColor Yellow
-Write-Host 'Сравните его с другом: он должен совпадать, иначе мод откажет в подключении.'
+Write-Host "Game build code: $($hash.Substring(0, 12))" -ForegroundColor Yellow
 Write-Host 'Compare it with your friend: it must match or the mod will refuse to connect.'
 if ($hash -ne '3590DA9516B67E36E18112E725B165F316757F7D0F4140C4CDAA4E263B9E96B7') {
-    Write-Host 'Внимание: эта версия игры не та, на которой мод проверялся. Он может работать, но не гарантируется.' -ForegroundColor DarkYellow
     Write-Host 'Note: this game build differs from the tested one; it may work but is not verified.' -ForegroundColor DarkYellow
 }
 Write-Host ''
-Write-Host 'Запустите игру и откройте «Мультиплеер» / Start the game and open Multiplayer.'
+Write-Host 'Start the game and open Multiplayer in the main menu.'

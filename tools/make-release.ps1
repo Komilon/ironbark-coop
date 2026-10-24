@@ -32,18 +32,3 @@ Get-ChildItem $rel -Recurse -File | Where-Object Name -ne 'SHA256-manifest.txt' 
 $zip = "$rel.zip"
 Compress-Archive -Path "$rel\*" -DestinationPath $zip -Force
 "{0:N0} KB  {1}" -f ((Get-Item $zip).Length / 1KB), $zip
-# The one-window installer: the same game\ files inside an exe, compiled with the C# compiler that ships with
-# Windows (.NET Framework 4), so nothing has to be installed to build or run it.
-$build = Join-Path $repo "dist\setup-build"
-if (Test-Path $build) { Remove-Item $build -Recurse -Force }
-New-Item -ItemType Directory -Force $build | Out-Null
-Compress-Archive -Path (Join-Path $rel 'game\*') -DestinationPath (Join-Path $build 'payload.zip') -Force
-Set-Content (Join-Path $build 'Version.cs') "namespace IronbarkCoopSetup { static class Version { public const string Value = `"$Version`"; } }" -Encoding utf8
-$csc = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
-$exe = Join-Path $repo "dist\IronbarkCoop-Setup-$Version.exe"
-& $csc -nologo -target:winexe "-out:$exe" -codepage:65001 -r:System.Windows.Forms.dll -r:System.Drawing.dll -r:System.IO.Compression.dll -r:System.IO.Compression.FileSystem.dll `
-    "-win32manifest:$(Join-Path $repo 'installer\setup.manifest')" "-resource:$(Join-Path $build 'payload.zip'),payload.zip" `
-    (Join-Path $repo 'installer\Setup.cs') (Join-Path $build 'Version.cs')
-if ($LASTEXITCODE -ne 0) { throw 'Setup exe build failed' }
-Remove-Item $build -Recurse -Force
-"{0:N0} KB  {1}" -f ((Get-Item $exe).Length / 1KB), $exe
