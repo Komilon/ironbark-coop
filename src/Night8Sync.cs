@@ -64,7 +64,7 @@ namespace IronbarkCoop
 
         internal void Reset()
         {
-            on = false; flashedHere = false; partnerSpotted = false; localHunt = false; huntPartner = false; gone = false; fled = false; havePose = false; toAnim = int.MinValue; soundBits = 0;
+            on = false; flashedHere = false; partnerSpotted = false; spottedHere = false; spotterMoment = null; localHunt = false; huntPartner = false; gone = false; fled = false; havePose = false; toAnim = int.MinValue; soundBits = 0;
             target = null; askAt = 0f; resetting = false; chaseStarted = false; partnerReady = false; sentReady = false;
             if (partnerMark) Object.Destroy(partnerMark.gameObject);
             partnerMark = null;
@@ -692,29 +692,51 @@ namespace IronbarkCoop
         // Whoever spots the camp through the binoculars first (the game's Seq8CultSeen) has the moment and takes the
         // photo; the partner gets the music and the first thought, and is told that the partner takes the photo (the
         // camera stays shut for them; before, Space was offered and did nothing). A later look by the partner does not
-        // start the moment again.
-        bool partnerSpotted;
-        internal bool LetCultSeen()
+        // start the moment again. Both looking at the same moment: Marcus (the story lead) keeps it.
+        // The spotter's moment no longer needs a second look through the binoculars 3 s later (the game's coroutine
+        // waited for it, so a look away meant no thought and no camera, which seemed random in the playtest).
+        bool partnerSpotted, spottedHere;
+        Coroutine spotterMoment;
+
+        // null: the game's own coroutine; otherwise what runs instead.
+        internal IEnumerator LetCultSeen()
         {
-            if (!plugin.Ready || !Night8 || Applying) return true;
-            if (partnerSpotted) { Plugin.Log("CULTIST8_CULT_ALREADY_SEEN"); return false; }
+            if (!plugin.Ready || !Night8 || Applying) return null;
+            if (partnerSpotted || spottedHere) { Plugin.Log("CULTIST8_CULT_ALREADY_SEEN"); return SupperSync.Nothing(); }
+            spottedHere = true;
             Send("cult-seen");
-            return true;
+            Plugin.Log("CULTIST8_CULT_SPOTTED_HERE");
+            return SpotterMoment(Tower);
+        }
+
+        IEnumerator SpotterMoment(WatchTowerManager tower)
+        {
+            yield return new WaitForSeconds(3f);
+            if (!spottedHere) yield break;
+            spotterMoment = tower.StartCoroutine(tower.Seq8CultSeenSubs());
+            if (tower.cultNoticed) tower.cultNoticed.Play();
+            yield return new WaitForSeconds(3f);
+            if (spottedHere && tower.seq8WhistleAS) tower.seq8WhistleAS.Play();
         }
 
         void CultSeenHere(WatchTowerManager tower)
         {
+            // Both spotted it at once: the lead keeps the moment.
+            if (spottedHere && plugin.LeadsStory) { Plugin.Log("CULTIST8_CULT_SEEN_BOTH_KEEP"); return; }
+            bool hadMoment = spottedHere;
+            spottedHere = false;
+            if (spotterMoment != null) { tower.StopCoroutine(spotterMoment); spotterMoment = null; }
             partnerSpotted = true;
             tower.canMount = false;
-            if (tower.seq8CultSeen) return;
             tower.seq8CultSeen = true;
+            if (hadMoment) { Plugin.Log("CULTIST8_CULT_SEEN_BOTH_YIELD"); return; }
             Gm.subtitle.ShowSubAndClose(F2FLocalizedText.GetLocalizedText("ep4_subs", "Seq8DidntKnow"), 5f);
             if (tower.cultNoticed) tower.cultNoticed.Play();
             if (tower.seq8WhistleAS) tower.StartCoroutine(WhistleLater(tower));
             Plugin.Log("CULTIST8_CULT_SEEN_FROM_PARTNER");
         }
 
-        static string PartnerPhotoHint => ConnectionPanel.L("РЎРЅРёРјРѕРє Р»Р°РіРµСЂСЏ РґРѕР»Р¶РµРЅ СЃРґРµР»Р°С‚СЊ РІР°С€ РЅР°РїР°СЂРЅРёРє.", "Your partner is the one to photograph the camp.");
+        static string PartnerPhotoHint => ConnectionPanel.L("Снимок лагеря должен сделать ваш напарник.", "Your partner is the one to photograph the camp.");
 
         void PhotoHint(WatchTowerManager tower)
         {
@@ -725,6 +747,7 @@ namespace IronbarkCoop
             if (show && text.text != PartnerPhotoHint) text.text = PartnerPhotoHint;
             else if (!show && text.text == PartnerPhotoHint) text.text = "";
         }
+
 
         // ---- the heartbeat while he searches downstairs ----
         // His own area triggers start and stop it (HeartBeatAndNoAmb / HeartBeatStopAndAmb); the copy crosses them at
@@ -775,8 +798,9 @@ namespace IronbarkCoop
     {
         static bool Prefix(ref System.Collections.IEnumerator __result)
         {
-            if (Night8Sync.Instance == null || Night8Sync.Instance.LetCultSeen()) return true;
-            __result = SupperSync.Nothing();
+            var instead = Night8Sync.Instance?.LetCultSeen();
+            if (instead == null) return true;
+            __result = instead;
             return false;
         }
     }

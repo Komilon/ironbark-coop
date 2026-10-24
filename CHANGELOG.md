@@ -2,6 +2,20 @@
 
 Both players must use the same mod version. / У обоих игроков должна быть одна версия мода.
 
+## 0.11.3 — the photo line fixed, the binoculars moment always comes / исправлена строка про снимок, момент с биноклем приходит всегда
+
+Protocol 15: both players need 0.11.3. / Протокол 15: обоим нужна 0.11.3.
+
+**English**
+- Night 8: the line "Your partner is the one to photograph the camp" was shown as garbled characters in Russian; fixed.
+- Night 8: whoever spots the camp gets the moment every time: the thought ("I didn't know...") and the camera. The game waited for a second look through the binoculars three seconds later, so a look away meant no thought and no photo, which looked random.
+- Night 8: if both look at the camp at the same moment, only one of you gets the camera (Marcus keeps it on a tie). Before, each game took the other for the first one, and nobody could take the photo.
+
+**Русский**
+- Ночь 8: строка «Снимок лагеря должен сделать ваш напарник» по-русски показывалась кракозябрами; исправлено.
+- Ночь 8: кто увидел лагерь, всегда получает свой момент: мысль («я не знал, что с этим делать») и камеру. Игра ждала повторного взгляда в бинокль через три секунды, и если отвернуться, не было ни мысли, ни снимка. Выглядело это случайным.
+- Ночь 8: если оба посмотрели на лагерь одновременно, камера достаётся только одному (при ничьей — Маркусу). Раньше каждая игра считала первым напарника, и сфотографировать не мог никто.
+
 ## 0.11.2 — the photo is the spotter's, the heartbeat ends for both, the wait at the tower door / снимок за тем, кто увидел, сердцебиение стихает у обоих, ожидание у двери вышки
 
 Protocol 14: both players need 0.11.2. / Протокол 14: обоим нужна 0.11.2.
