@@ -5,22 +5,14 @@ using UnityEngine.SceneManagement;
 
 namespace IronbarkCoop
 {
-    // Playtest shortcuts that put both players back at the start of a scene to try it again (playtest request):
-    //   Ctrl+F10  night 8, just before the binoculars: the opening card read, Connor's talks over, both up in the room;
-    //   Ctrl+F11  the trail's end, before the cultist.
-    // Either player presses it; both games go there together.
+    // Lab scenarios that put both players at the start of a scene (the "lab-scenario" command; both games go together):
+    //   binoculars  night 8, just before the binoculars: the opening card read, Connor's talks over, both up in the room;
+    //   trailend    the trail's end, before the cultist.
     internal static class ScenarioSync
     {
         static GameManager Gm => GameManager.instance;
         static string pending;
         static Coroutine running;
-
-        internal static void Tick(Plugin plugin)
-        {
-            bool ctrl = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
-            if (ctrl && Input.GetKeyDown(KeyCode.F10)) Request(plugin, "binoculars");
-            if (ctrl && Input.GetKeyDown(KeyCode.F11)) Request(plugin, "trailend");
-        }
 
         static void Request(Plugin plugin, string name)
         {
@@ -82,7 +74,6 @@ namespace IronbarkCoop
                 if (controller) feet.y -= controller.height * 0.5f - controller.center.y;
                 SharedChase.PlacePlayer(SharedChase.Ground(feet + new Vector3(-1f, 0f, 0.6f)), Gm.playerFP.transform.eulerAngles.y);
             }
-            Gm.subtitle.ShowSubAndClose(ConnectionPanel.L("Ночь 8, перед биноклем. Ctrl+F10 — начать отсюда снова.", "Night 8, before the binoculars. Ctrl+F10 to start here again."), 5f);
             Plugin.Log("SCENARIO_READY binoculars");
             running = null;
         }

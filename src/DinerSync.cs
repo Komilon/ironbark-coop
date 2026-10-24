@@ -461,7 +461,7 @@ namespace IronbarkCoop
             if (gm.inputHandler.mouseLeftClickDown && Time.unscaledTime >= waitHintAt)
             {
                 waitHintAt = Time.unscaledTime + 3f;
-                gm.subtitle.ShowSubAndClose(ConnectionPanel.L("Подожду, пока принесут и Тессе.", "I'll wait until Tessa's food comes too."), 2.5f);
+                gm.subtitle.ShowSubAndClose(ConnectionPanel.L("Нужно дождаться, пока принесут и Тессе.", "Need to wait until Tessa's food comes too."), 2.5f);
             }
             return false;
         }
@@ -596,7 +596,7 @@ namespace IronbarkCoop
         {
             var plugin = Plugin.Instance;
             if (plugin == null || !plugin.LeadsStory || !GameManager.instance || !GameManager.instance.dinerManager) return true;
-            GameManager.instance.subtitle.ShowSubAndClose(ConnectionPanel.L("Мне пока не нужно.", "I don't need to go."), 2.5f);
+            GameManager.instance.subtitle.ShowSubAndClose(ConnectionPanel.L("Пока не нужно.", "Not yet."), 2.5f);
             return false;
         }
     }

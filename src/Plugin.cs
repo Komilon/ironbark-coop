@@ -12,7 +12,7 @@ namespace IronbarkCoop
     public sealed class Packet
     {
         public string kind, scene, code, build;
-        public const int Protocol = 15;
+        public const int Protocol = 16;
         public int version = Protocol;
         public Vector3 position;
         public Quaternion rotation;
@@ -103,7 +103,7 @@ namespace IronbarkCoop
         }
     }
 
-    [BepInPlugin("astra.ironbark.coop", "Ironbark Cooperative", "0.11.3")]
+    [BepInPlugin("astra.ironbark.coop", "Ironbark Cooperative", "0.12.0")]
     public sealed class Plugin : BaseUnityPlugin
     {
         internal static Plugin Instance;
@@ -151,6 +151,13 @@ namespace IronbarkCoop
         internal void HostSteam() => ConnectSteam(0);
         internal void InviteSteam() { if (transport is SteamTransport s) s.Invite(); }
         internal void Leave() => Disconnect();
+        internal VoiceMode MicMode => voiceMode;
+        internal KeyCode TalkKey => talkKey;
+        internal void NextMicrophone()
+        {
+            voiceMode = (VoiceMode)(((int)voiceMode + 1) % 3);
+            Config.Bind("Voice", "Input", VoiceMode.VoiceActivation).Value = voiceMode;
+        }
         internal bool UpnpEnabled { get => upnpEnabled; set { upnpEnabled = value; Config.Bind("Network", "UPnP", false).Value = value; } }
         internal string UpnpState => upnp.State;
         // The code a host gives to a friend: router's external address when UPnP opened the port, else the best local one.
@@ -174,7 +181,7 @@ namespace IronbarkCoop
         VoicePlayback voice;
         VoiceCapture capture;
         float voiceRetryAt;
-        bool host, authenticated, menu = true;
+        bool host, authenticated;
         string address = "127.0.0.1", code = "", status = "Offline";
         const int Port = 25061;
         string build;
@@ -233,9 +240,11 @@ namespace IronbarkCoop
                 build = BitConverter.ToString(sha.ComputeHash(File.ReadAllBytes(typeof(GameManager).Assembly.Location))).Replace("-", "");
             code = Config.Bind("Session", "Code", "ironbark", "Use the same private session code on both players.").Value;
             address = Config.Bind("Session", "Address", "127.0.0.1", "Host address on LAN or private VPN.").Value;
-            voiceMode = Config.Bind("Voice", "Mode", VoiceMode.PushToTalk, "PushToTalk, VoiceActivation or Off.").Value;
+            // The microphone opens on speech, as in Scratch Creek (playtest request). A new key, so configs saved with the old
+            // push-to-talk default ("Mode") start on voice too; the Multiplayer menu switches it.
+            voiceMode = Config.Bind("Voice", "Input", VoiceMode.VoiceActivation, "VoiceActivation (talk and you are heard), PushToTalk or Off.").Value;
             talkKey = Config.Bind("Voice", "PushToTalkKey", KeyCode.V, "Hold to talk in PushToTalk mode.").Value;
-            voiceThreshold = Config.Bind("Voice", "ActivationThreshold", 0.02f, "Microphone RMS level that opens voice activation.").Value;
+            voiceThreshold = Config.Bind("Voice", "ActivationLevel", 0.012f, "Lowest microphone RMS level that opens voice activation (it also adapts to the room noise).").Value;
             voiceVolume = Config.Bind("Voice", "PartnerVolume", 1f, "Partner voice volume, 0..1.").Value;
             microphoneName = Config.Bind("Voice", "Microphone", "", "Device name; empty uses the system default.").Value;
             playerName = Config.Bind("Session", "PlayerName", "", "Name shown above your character; empty uses your Steam name.").Value;
@@ -337,7 +346,6 @@ namespace IronbarkCoop
 
         void Update()
         {
-            if (Input.GetKeyDown(KeyCode.F8)) menu = !menu;
             if (pendingLobby != 0 && SteamTransport.Available) { ulong lobbyId = pendingLobby; pendingLobby = 0; ConnectSteam(lobbyId); }
             transport?.Pump();
             if (transport != null)
@@ -408,6 +416,7 @@ namespace IronbarkCoop
                 // Only forward speed: the RV body keeps its height itself, and a carried-over vertical speed grew without bound.
                 rvBody.velocity = rvBody.transform.forward * labPushSpeed;
             }
+            Wording.Tick(authenticated);
             Story.Tick();
             Items.Tick();
             Duties.Tick();
@@ -427,9 +436,7 @@ namespace IronbarkCoop
             Night6.Tick();
             Night8.Tick();
             TrailEnd.Tick();
-            SharedChase.Tick(this);
             ReadSync.Tick();
-            ScenarioSync.Tick(this);
             Sleep.Tick();
             AnchorSeatedPartner();
             if (authenticated && Time.unscaledTime >= voiceRetryAt)
@@ -522,7 +529,7 @@ namespace IronbarkCoop
             if (p.kind == "trailend") { TrailEnd.Receive(p); return; }
             if (p.kind == "chase") { SharedChase.Receive(p); return; }
             if (p.kind == "read") { ReadSync.Receive(p); return; }
-            if (p.kind == "scenario") { ScenarioSync.Receive(this, p); return; }
+            if (p.kind == "scenario") { if (Lab) ScenarioSync.Receive(this, p); return; }
             if (p.kind == "react") { if (p.scene == SceneManager.GetActiveScene().name && avatar != null && avatar.Active) { avatar.React(); Logger.LogInfo("SCARE_REMOTE " + p.code); } return; }
             if (p.kind == "scene")
             {
@@ -626,6 +633,7 @@ namespace IronbarkCoop
         internal bool PartnerHidden => !PartnerPresent || partnerHiding;
         internal bool PartnerDreaming => authenticated && partnerDreaming;
         internal float VoiceGain => voice != null ? voice.Gain : -1f;
+        internal string VoiceFilter => voice != null ? voice.Cutoff.ToString("F0") + "/" + voice.Boost.ToString("F1", System.Globalization.CultureInfo.InvariantCulture) : "-";
         internal GameObject PartnerRoot => avatar != null ? avatar.Root : null;
         internal float PartnerHipsGap => avatar != null && avatar.Active ? avatar.LyingHipsGap : -1f;
         internal float PartnerPerchGap => avatar != null && avatar.Active && avatar.OnBedEdge ? avatar.PerchHipsGap : -1f;
@@ -741,6 +749,7 @@ namespace IronbarkCoop
             Night8.SceneLoaded();
             TrailEnd.SceneLoaded();
             ReadSync.SceneLoaded();
+            Wording.SceneLoaded();
             ScenarioSync.SceneLoaded(this);
             SupperSync.SceneLoaded();
             Sleep.SceneLoaded();
@@ -867,6 +876,13 @@ namespace IronbarkCoop
                     if (p.kind == "lab-clear-controls" && GameManager.instance && GameManager.instance.uIManager) GameManager.instance.uIManager.controlsText.text = "";
                     if (p.kind == "lab-skip-card") Logger.LogInfo("LAB_SKIP_CARD " + ScenarioSync.SkipCard());
                     if (p.kind == "lab-scenario") ScenarioSync.LabRequest(this, p.code);
+                    if (p.kind == "loc-dump") Logger.LogInfo("LAB_LOC_DUMP " + Wording.LabDump(Path.Combine(bridgeDir, "loc.json")));
+                    if (p.kind == "loc-text") Logger.LogInfo("LAB_LOC_TEXT " + p.code + " = " + Wording.LabText(p.code) + " changed=" + Wording.Changed);
+                    if (p.kind == "vad-gate") Logger.LogInfo("LAB_VAD " + p.code + " " + VoiceCapture.LabGate(p.pitch, p.time));
+                    if (p.kind == "voice-muffle") voice?.LabMuffle();
+                    if (p.kind == "record") StartCoroutine(Record(p.code, p.arg, p.pitch));
+                    if (p.kind == "locale") { var wanted = UnityEngine.Localization.Settings.LocalizationSettings.AvailableLocales.GetLocale(p.code); if (wanted) UnityEngine.Localization.Settings.LocalizationSettings.SelectedLocale = wanted; Logger.LogInfo("LAB_LOCALE " + p.code + " " + (bool)wanted); }
+                    if (p.kind == "lab-ghost") SharedChase.LabGhost(this, p.active);
                     if (p.kind == "lab-pee" && GameManager.instance.watchTowerManager) { var tw = GameManager.instance.watchTowerManager; tw.seqPeed = true; tw.seq7peeTrigger.StartPee(); Logger.LogInfo("LAB_PEE"); }
                     if (p.kind == "lab-bake" && GameManager.instance.watchTowerManager) GameManager.instance.watchTowerManager.casserole.FinishBaking();
                     if (p.kind == "lab-eat-dish" && GameManager.instance && GameManager.instance.watchTowerManager && GameManager.instance.watchTowerManager.casserole) { var dish = GameManager.instance.watchTowerManager.casserole; dish.isEating = false; dish.Eat(); Logger.LogInfo("LAB_EAT_DISH " + dish.finishedInt); }
@@ -1025,6 +1041,22 @@ namespace IronbarkCoop
             }, true));
         }
 
+        // Lab: the screen as it is drawn, frame after frame (JPEG files in the bridge folder's <name>), for showcase clips.
+        System.Collections.IEnumerator Record(string name, int frames, float interval)
+        {
+            string folder = Path.Combine(bridgeDir, string.IsNullOrEmpty(name) ? "rec" : name);
+            Directory.CreateDirectory(folder);
+            for (int i = 0; i < Math.Max(1, frames); i++)
+            {
+                yield return new WaitForEndOfFrame();
+                var shot = ScreenCapture.CaptureScreenshotAsTexture();
+                File.WriteAllBytes(Path.Combine(folder, i.ToString("D4") + ".jpg"), shot.EncodeToJPG(92));
+                Destroy(shot);
+                if (interval > 0f) yield return new WaitForSecondsRealtime(interval);
+            }
+            Logger.LogInfo("LAB_RECORDED " + name + " " + frames);
+        }
+
         static void LookAt(Vector3 point)
         {
             var gm = GameManager.instance;
@@ -1041,7 +1073,7 @@ namespace IronbarkCoop
 
         string NetSummary()
         {
-            string extra = " upnp=" + upnp.State.Replace(' ', '_') + " external=" + upnp.ExternalAddress + " code=" + HostCode;
+            string extra = " voiceFilter=" + VoiceFilter + " upnp=" + upnp.State.Replace(' ', '_') + " external=" + upnp.ExternalAddress + " code=" + HostCode;
             if (transport is DirectTransport direct)
                 return extra + " udp=" + direct.UdpActive + " poseBytes=" + LastPoseBytes + " rtt=" + direct.RttMs + " udpRx=" + direct.UdpReceived + " udpTx=" + direct.UdpSent + " poseGaps=" + direct.PoseGaps + " drop=" + DirectTransport.LabDropPercent;
             return extra + (transport is SteamTransport ? " steam" : " none");
@@ -1114,38 +1146,17 @@ namespace IronbarkCoop
             }
         }
 
+        // While the microphone sends, a small mark in the corner (the F8 panel that showed it is gone).
+        GUIStyle talkStyle;
         void OnGUI()
         {
-            if (!menu) return;
-            string L(string ru, string en) => ConnectionPanel.L(ru, en);
-            var mine = ConnectionPanel.Addresses();
-            float height = 360 + 20 * mine.Count;
-            GUI.Box(new Rect(15, 15, 370, height), "Ironbark Coop");
-            float y = 40;
-            GUI.Label(new Rect(30, y, 340, 44), ConnectionPanel.Explain(status)); y += 46;
-            var steam = transport as SteamTransport;
-            GUI.Label(new Rect(30, y, 340, 22), SteamTransport.Available ? "Steam: " + SteamTransport.LocalName : L("Steam: недоступен (нужна версия из Steam)", "Steam: unavailable (needs the Steam version)")); y += 24;
-            GUI.enabled = SteamTransport.Available;
-            if (GUI.Button(new Rect(30, y, 160, 28), L("Хост через Steam", "Host via Steam"))) ConnectSteam(0);
-            GUI.enabled = steam != null && steam.IsHost && steam.HasLobby;
-            if (GUI.Button(new Rect(200, y, 170, 28), L("Пригласить друга", "Invite friend"))) steam.Invite();
-            GUI.enabled = true; y += 38;
-            GUI.Label(new Rect(30, y, 340, 22), L("Ваши адреса для друга:", "Your addresses for a friend:")); y += 20;
-            foreach (var line in mine) { GUI.Label(new Rect(42, y, 330, 20), line); y += 20; }
-            y += 6;
-            GUI.Label(new Rect(30, y, 85, 25), L("IP хоста", "Host IP"));
-            address = GUI.TextField(new Rect(120, y, 250, 25), address, 128); y += 30;
-            GUI.Label(new Rect(30, y, 85, 25), L("Код", "Code"));
-            code = GUI.TextField(new Rect(120, y, 250, 25), code, 64); y += 34;
-            if (GUI.Button(new Rect(30, y, 110, 30), L("Хост (IP)", "Host (IP)"))) Connect(true);
-            if (GUI.Button(new Rect(145, y, 110, 30), L("Войти (IP)", "Join (IP)"))) Connect(false);
-            if (GUI.Button(new Rect(260, y, 110, 30), L("Отключиться", "Disconnect"))) Disconnect();
-            y += 40;
-            string hint = voiceMode == VoiceMode.PushToTalk ? L("Держите ", "Hold ") + talkKey + L(" — говорить", ": talk")
-                : voiceMode == VoiceMode.VoiceActivation ? L("Голос по активации", "Voice activation") : L("Голос выключен", "Voice off");
-            if (capture != null && capture.Transmitting) hint += L("  • вас слышно", "  • transmitting");
-            GUI.Label(new Rect(30, y, 340, 40), capture != null && capture.Error != null ? capture.Error : "F8 " + L("— панель", ": panel") + " | " + hint);
+            if (!authenticated || capture == null || Event.current.type != EventType.Repaint) return;
+            string text = capture.Error ?? (capture.Transmitting ? "((•))" : null);
+            if (text == null) return;
+            if (talkStyle == null) talkStyle = new GUIStyle(GUI.skin.label) { fontSize = Mathf.Max(12, Screen.height / 54), normal = { textColor = new Color(1f, 1f, 1f, 0.55f) } };
+            GUI.Label(new Rect(18, Screen.height - 40, 400, 30), text, talkStyle);
         }
+
         void OnDestroy()
         {
             SceneManager.sceneLoaded -= SceneLoaded;

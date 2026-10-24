@@ -12,23 +12,19 @@ namespace IronbarkCoop
     // - an invisible wall holds whoever is ready to run until the partner is ready too (a big zone in front of it), so
     //   nobody is left behind or chased alone;
     // - the partner hears the hunt's music too, quieter;
-    // - a test mode (Ctrl+F9) in which the cultist does not see this player, for trying the chase alone with two copies.
+    // - a lab-only test mode in which the cultist does not see this player, for trying the chase with two copies.
     internal static class SharedChase
     {
         static GameManager Gm => GameManager.instance;
 
-        // Ctrl+F9: the cultist ignores this player (for testing with two copies on one PC). Told to the partner.
+        // Lab only (the "lab-ghost" command): the cultist ignores this player. Told to the partner.
         internal static bool Ghost, PartnerGhost;
 
-        internal static void Tick(Plugin plugin)
+        internal static void LabGhost(Plugin plugin, bool on)
         {
-            if (Input.GetKeyDown(KeyCode.F9) && (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)))
-            {
-                Ghost = !Ghost;
-                if (Gm && Gm.subtitle) Gm.subtitle.ShowSubAndClose(Ghost ? ConnectionPanel.L("Режим теста: культист вас не замечает (Ctrl+F9 — выключить).", "Test mode: the cultist ignores you (Ctrl+F9 to turn off).") : ConnectionPanel.L("Режим теста выключен.", "Test mode off."), 4f);
-                if (plugin.Ready) plugin.Send(new Packet { kind = "chase", code = "ghost", active = Ghost });
-                Plugin.Log("CHASE_GHOST " + Ghost);
-            }
+            Ghost = on;
+            if (plugin.Ready) plugin.Send(new Packet { kind = "chase", code = "ghost", active = Ghost });
+            Plugin.Log("CHASE_GHOST " + Ghost);
         }
 
         internal static void Receive(Packet packet)

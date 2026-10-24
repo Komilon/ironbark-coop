@@ -41,9 +41,8 @@ namespace IronbarkCoop
         // The napper's line on the evening card (the camper's own walk back in the dark is not theirs).
         internal string NapIntroLine()
         {
-            bool tessa = plugin.MyCharacter == "tessa";
-            return string.Format(ConnectionPanel.L("Я {0} почти до самого вечера. Когда я {1}, {2} уже {3} от костра.", "I slept almost until evening. When I woke up, {2} was already back from the campfire."),
-                tessa ? "проспала" : "проспал", tessa ? "проснулась" : "проснулся", PartnerName, PartnerIsTessa ? "вернулась" : "вернулся");
+            return string.Format(ConnectionPanel.L("Сон затянулся почти до самого вечера. К пробуждению {0} уже {1} от костра.", "The nap ran almost until evening. On waking, {0} was already back from the campfire."),
+                PartnerName, PartnerIsTessa ? "вернулась" : "вернулся");
         }
 
         internal void FollowingScene(string scene)
@@ -101,7 +100,7 @@ namespace IronbarkCoop
             Rearm(tower);
             if (StayingBehind)
             {
-                Gm.subtitle.ShowSubAndClose(string.Format(ConnectionPanel.L("{0} {1} к дыму один. Мне нужно остаться на вышке.", "{0} {1} to the smoke alone. I need to stay at the tower."), PartnerName, Went), 4f);
+                Gm.subtitle.ShowSubAndClose(string.Format(ConnectionPanel.L("{0} {1} к дыму. Кому-то нужно остаться на вышке.", "{0} {1} to the smoke. Someone has to stay at the tower."), PartnerName, Went), 4f);
                 return false;
             }
             if (choosing || waiting || opening) return false;
@@ -156,7 +155,7 @@ namespace IronbarkCoop
             cursorWasShown = Cursor.visible;
             Gm.ShowCursor();
             Gm.isConversing = true;
-            panel.ShowLine("", string.Format(ConnectionPanel.L("Подожду {0} здесь, у тропы. Или идти к дыму сразу?", "I'll wait for {0} here at the trail. Or go to the smoke right away?"), PartnerName));
+            panel.ShowLine("", string.Format(ConnectionPanel.L("Дождаться {0} здесь, у тропы? Или идти к дыму сразу?", "Wait for {0} here at the trail? Or go to the smoke right away?"), PartnerName));
             panel.ShowOptions(new[] { ConnectionPanel.L("Идти сразу", "Go right away") }, 1, Pick);
             panel.ShowHint(ConnectionPanel.L("[ПРОБЕЛ] Отойти", "[SPACE] Step back"));
             StartWaiting();
@@ -220,7 +219,7 @@ namespace IronbarkCoop
                 case "napping": PartnerNapping = true; Plugin.Log("TRIP_PARTNER_NAPPING"); return;
                 case "camper-waiting":
                     if (StayingBehind && !napping)
-                        Gm.subtitle.ShowSubAndClose(string.Format(ConnectionPanel.L("{0} уже {1} у костра и ждёт, пока я управлюсь с делами и прилягу.", "{0} is done at the campfire and waiting for me to finish the chores and lie down."), PartnerName, PartnerIsTessa ? "закончила" : "закончил"), 6f);
+                        Gm.subtitle.ShowSubAndClose(string.Format(ConnectionPanel.L("{0} уже {1} у костра и ждёт: сначала дела на вышке, потом прилечь.", "{0} is done at the campfire and waiting: the chores here first, then a nap."), PartnerName, PartnerIsTessa ? "закончила" : "закончил"), 6f);
                     Plugin.Log("TRIP_PARTNER_WAITS_AT_CAMPFIRE");
                     return;
             }
@@ -229,7 +228,7 @@ namespace IronbarkCoop
             {
                 case "wait":
                     partnerWaiting = true;
-                    Gm.subtitle.ShowSubAndClose(string.Format(ConnectionPanel.L("{0} ждёт меня у тропы к дыму.", "{0} is waiting for me at the trail to the smoke."), PartnerName), 4f);
+                    Gm.subtitle.ShowSubAndClose(string.Format(ConnectionPanel.L("{0} ждёт у тропы к дыму.", "{0} is waiting at the trail to the smoke."), PartnerName), 4f);
                     break;
                 case "unwait": partnerWaiting = false; break;
                 case "together":
@@ -285,7 +284,7 @@ namespace IronbarkCoop
             if (chore == 0)
             {
                 if (Gm.uIManager.inTransition || Time.unscaledTime < choreAt) return;
-                Gm.subtitle.ShowSubAndClose(string.Format(ConnectionPanel.L("{0} {1} проверить дым. Займусь пока делами на вышке, а потом подремлю, пока {2}.", "{0} {1} to check the smoke. I'll see to the tower meanwhile, then nap until {2}."), PartnerName, Went, WillBeBack), 6f);
+                Gm.subtitle.ShowSubAndClose(string.Format(ConnectionPanel.L("{0} {1} проверить дым. Пока что - дела на вышке, а потом можно подремать, пока {2}.", "{0} {1} to check the smoke. Tower chores meanwhile, then a nap until {2}."), PartnerName, Went, WillBeBack), 6f);
                 // The stove has burnt out since the morning.
                 CoopDuties.PutOutStove(tower);
                 CoopDuties.OpenWoodPile(tower);
@@ -304,7 +303,7 @@ namespace IronbarkCoop
             {
                 CoopDuties.StallGenerator(tower);
                 generator = 1;
-                Gm.subtitle.ShowSubAndClose(ConnectionPanel.L("Свет погас... Похоже, заглох генератор. Надо спуститься и завести его.", "The lights died... The generator must have stalled. I need to go down and restart it."), 5f);
+                Gm.subtitle.ShowSubAndClose(ConnectionPanel.L("Свет погас... Похоже, заглох генератор. Надо спуститься и завести его.", "The lights died... The generator must have stalled. Someone has to go down and restart it."), 5f);
                 Plugin.Log("TRIP_CHORE generator stalled");
             }
             if (generator == 1 && !restarting && !tower.isGeneratorOn && !Gm.uIManager.inTransition && Clicked(tower.generator, 1.8f))
@@ -403,7 +402,7 @@ namespace IronbarkCoop
             ui.transitionImage.DOColor(new Color(c.r, c.g, c.b, 0.85f), 2f);
             while (napping && StayingBehind)
             {
-                Hint(string.Format(ConnectionPanel.L("Дремлю... {0} ещё у костра.", "Napping... {0} is still at the campfire."), PartnerName));
+                Hint(string.Format(ConnectionPanel.L("Дрёма... {0} ещё у костра.", "Napping... {0} is still at the campfire."), PartnerName));
                 yield return new WaitForSeconds(1f);
             }
         }

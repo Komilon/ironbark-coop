@@ -110,7 +110,16 @@ namespace IronbarkCoop
             if (on == flat) return;
             flat = on;
             if (!dream) source.spatialBlend = on ? 0f : 1f;
+            // Nothing is between two people on a call: the wall muffling from the last scene must not carry over (playtest:
+            // the partner was barely heard in the credits), and the voice is lifted over the credits music.
+            if (on) { Occluded = false; occludedTarget = 22000f; lowPass.cutoffFrequency = 22000f; }
+            filter.Boost = on ? CallBoost : 1f;
         }
+        const float CallBoost = 2.2f;
+        internal float Cutoff => lowPass.cutoffFrequency;
+        internal float Boost => filter.Boost;
+        // Lab: as if a wall had been between the players when the scene changed.
+        internal void LabMuffle() { occludedTarget = 1400f; lowPass.cutoffFrequency = 1400f; Occluded = true; }
 
         public void SetDream(bool on, float hearing)
         {
@@ -145,7 +154,7 @@ namespace IronbarkCoop
                     occludedTarget = Occluded ? 1400f : 22000f;
                 }
             }
-            float cutoff = dream ? 900f : occludedTarget;
+            float cutoff = dream ? 900f : flat ? 22000f : occludedTarget;
             lowPass.cutoffFrequency = Mathf.Lerp(lowPass.cutoffFrequency, cutoff, 1f - Mathf.Exp(-12f * Time.unscaledDeltaTime));
             float wanted = (dream ? dreamGain : 1f) * (sleepTalk ? SleepTalkGain : 1f);
             // Falling asleep (or waking) is not a fade: the dreamer is silent at once.

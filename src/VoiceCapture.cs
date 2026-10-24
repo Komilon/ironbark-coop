@@ -81,8 +81,11 @@ namespace IronbarkCoop
                 Level = Mathf.Sqrt(energy / frame.Length);
                 if (mode == VoiceMode.VoiceActivation)
                 {
-                    if (Level >= threshold) gateUntil = Time.unscaledTime + 0.35f;
-                    if (Time.unscaledTime > gateUntil) continue;
+                    // Opens on speech above the room's own noise (a slow floor that follows the quiet moments), stays open a
+                    // moment after the last word, and sends the 100 ms before the opening so first syllables are not cut.
+                    var gate = Gate(Level, Time.unscaledTime, threshold);
+                    if (gate == Closed) { Remember(); continue; }
+                    if (gate == Opening) SendPreRoll();
                 }
                 Send();
                 Transmitting = true;
@@ -103,6 +106,48 @@ namespace IronbarkCoop
             return true;
         }
 
+        const int Closed = 0, Open = 1, Opening = 2;
+                float floor = 0.005f;
+        // One 20 ms frame through the gate: Closed (not sent), Opening (send the pre-roll too) or Open.
+        internal int Gate(float level, float now, float threshold)
+        {
+            bool open = now <= gateUntil;
+            if (!open) floor = Mathf.Min(0.04f, level < floor ? Mathf.Lerp(floor, level, 0.2f) : Mathf.Lerp(floor, level, 0.004f));
+            if (level >= Mathf.Max(threshold, floor * 3f)) gateUntil = now + 0.6f;
+            return now > gateUntil ? Closed : open ? Open : Opening;
+        }
+
+        // Lab: three scripted seconds of room noise, speech, a pause and speech again through a fresh gate; the gate states.
+        internal static string LabGate(float noise, float speech)
+        {
+            var test = new VoiceCapture(null);
+            var states = new System.Text.StringBuilder();
+            for (int i = 0; i < 150; i++)
+            {
+                float t = 1f + i * 0.02f;
+                bool talking = (i >= 50 && i < 75) || (i >= 120 && i < 130);
+                states.Append(test.Gate(talking ? speech : noise * (0.8f + 0.4f * ((i * 7) % 5) / 4f), t, 0.012f));
+            }
+            test.Dispose();
+            return states.ToString();
+        }
+
+        readonly Queue<float[]> preRoll = new Queue<float[]>();
+        const int PreRollFrames = 5;
+        void Remember()
+        {
+            var copy = preRoll.Count >= PreRollFrames ? preRoll.Dequeue() : new float[frame.Length];
+            Array.Copy(frame, copy, frame.Length);
+            preRoll.Enqueue(copy);
+        }
+
+        void SendPreRoll()
+        {
+            var current = (float[])frame.Clone();
+            while (preRoll.Count > 0) { Array.Copy(preRoll.Dequeue(), frame, frame.Length); Send(); }
+            Array.Copy(current, frame, frame.Length);
+        }
+
         void Send()
         {
             plugin.Send(new Packet { kind = "voice", scene = SceneManager.GetActiveScene().name, arg = ++frameSeq,
@@ -117,6 +162,7 @@ namespace IronbarkCoop
             UnityEngine.Object.Destroy(microphone);
             microphone = null;
             pending.Clear();
+            preRoll.Clear();
         }
 
         public void Dispose() { Stop(); codec.Dispose(); }

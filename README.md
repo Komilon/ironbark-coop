@@ -5,6 +5,8 @@
 
 [English](#english) · [Русский](#русский) · [Changelog / Изменения](CHANGELOG.md) · [Releases / Релизы](../../releases)
 
+![The diner for two](docs/media/02-diner.png)
+
 > Unofficial fan mod. Not affiliated with Fears to Fathom or its developers. The repository and the releases contain **no files of either game**: models, sounds and animations are read at runtime from the player's own installed copies of Ironbark Lookout and Scratch Creek.
 >
 > Неофициальный фанатский мод, не связан с разработчиками Fears to Fathom. В репозитории и релизах **нет файлов игр**: модели, звуки и анимации мод читает во время игры из ваших установленных копий Ironbark Lookout и Scratch Creek.
@@ -13,13 +15,28 @@
 
 ## English
 
-You both play one story together, each in your own body, with your own flashlight and inventory. Either of you can move the story forward; a scare only gets the one who ran into it.
+You both play the whole episode together, from the drive to the trail's end. Each of you has your own body, flashlight and inventory. Either of you can move the story forward, and the story is told by both of you.
+
+### Screenshots
+
+| | |
+|---|---|
+| ![Lobby](docs/media/01-lobby.png) | ![The ride](docs/media/03-rv.gif) |
+| ![Radio talk for two](docs/media/04-tower-radio.png) | ![Supper on the bed](docs/media/06-supper.png) |
+| ![Look picker](docs/media/08-looks.png) | ![The story told by two](docs/media/05-wording.png) |
+
+<details>
+<summary><b>⚠ Spoiler: the cultist / Спойлер: культист</b></summary>
+
+![The cultist](docs/media/07-cultist.gif)
+
+</details>
 
 ### Requirements
 
 - **Fears to Fathom: Ironbark Lookout** for both players, **the same version**. The installer prints a "game build code"; yours and your friend's must match.
-- **Fears to Fathom: Scratch Creek** — optional. With it you can look like Marcus or Tessa. Without it you pick one of Ironbark's own people (the ranger, the diner waitress, the man in a suit), read from your Ironbark install.
-- Windows x64.
+- **Fears to Fathom: Scratch Creek** is optional. With it you can look like Marcus or Tessa. Without it you pick one of Ironbark's own people (the ranger, the diner waitress, the man in a suit), read from your Ironbark install.
+- Windows x64, a microphone for voice chat.
 - A shared network: LAN, a virtual LAN (**Radmin VPN**, ZeroTier, Tailscale) or a forwarded port on the router.
 
 ### Install
@@ -34,39 +51,48 @@ Uninstall: `uninstall.bat` (it asks before removing BepInEx, which other mods ma
 ### Playing together
 
 1. Main menu → **Multiplayer**.
-2. The **host** presses **Create game** and gets a **code for your friend** (`IB-XXXXX-XXXXX`); send it (the **Copy code** button helps).
-3. The **friend** pastes the code (or the host's IP) and presses **Connect**.
+2. The **host** presses **Host game** and gets a **code for your friend** (`IB-XXXXX-XXXXX`). Send it; the **Copy code** button helps.
+3. The **friend** pastes the code (or the host's IP) and presses **Join**.
 4. When both are in, the host presses **Choose chapter** and starts a new game or continues a save. The friend follows into the same scene and night.
 5. If Windows asks about the firewall, allow access. Port **25061**, TCP and UDP.
 
-The code carries an address you can be reached at: external (if UPnP worked), else Radmin/ZeroTier/Tailscale, else LAN. If the connection drops, just connect again: the game catches you up to the current night and world state.
+The code carries an address you can be reached at: the external one (if UPnP worked), else Radmin/ZeroTier/Tailscale, else LAN. If the connection drops, just connect again: the game catches you up to the current night and world state.
 
-**Auto port (UPnP, experimental)** — a switch in the Multiplayer menu that asks the router to open the port so you can play without a VPN.
+**Auto port (UPnP, experimental)** is a switch in the Multiplayer menu. It asks the router to open the port so you can play without a VPN.
 
 ### Controls
 
-- **V** (hold) — voice. Voice activation or another key can be set in the config.
-- **Ctrl** (hold) — crouch, as in Scratch Creek.
-- **Left click on the passenger seat** — sit next to the driver; **Space** — stand up.
-- **Left click on an answer** in your partner's radio talk — your vote; **Space** — step away from the talk.
-- **F8** — connection panel.
-- Everything else as in the game.
+- **Just talk**: the microphone opens when you speak, as in Scratch Creek. The **Microphone** line in the Multiplayer menu switches between voice activated, push-to-talk (**V**) and off. A small mark in the bottom-left corner shows when you are heard.
+- **Ctrl** (hold): crouch, as in Scratch Creek.
+- **Left click on the passenger seat**: sit next to the driver. **Space**: stand up.
+- **Left click on an answer** in your partner's radio talk: your vote. **Space**: step away from the talk.
+- Everything else is as in the game.
 
-### What it feels like
+### What you get
 
-- **Pick how you look** in the Multiplayer menu (**Look**): a 3D view you can turn with the mouse, with every pose (standing, walking, running, crouching, sitting, asleep). Choices: Marcus and Tessa (if you have Scratch Creek), the ranger, the waitress and the man in a suit (from Ironbark itself). If your partner lacks your pick (no Scratch Creek), they see you as a similar Ironbark character. **Role** is separate: Marcus (the host in "auto") leads the story.
-- **Animations**: Scratch Creek's when you have it (also on Ironbark's people), otherwise Ironbark's own. The head turns before the body; flashlight and items are held with IK.
-- **3D proximity voice**: full near you, fading out by about 12 m, muffled behind walls; Scratch Creek's speaking icon over the talker. Voice and movement go over UDP.
-- **Shared story**: doors, lights, generator, stove, blinds, items and night progress match for both, and either player can do the tasks. **Personal inventory** and **personal scares**; a death respawns only that player in the tower.
-- **Diner**: fixed sides (Marcus on the bench where food is served, Tessa across); the waitress brings a tray to each of you.
-- **Rides**: driver and passenger seat, or stand in the cab; the ride's shake is felt inside; wheel, engine, horn and radio are shared.
-- **Tower**: one desk chair, one computer (booted once, windows shared, screen shown on the monitor); radio talks seen by both and answered together (coloured dots show who picked what: Marcus amber, Tessa teal).
-- **Going to sleep, Scratch Creek style**: whoever lies down first waits on their half of the bed; the night ends when both are in bed.
-- **Night 2, Scratch Creek style**: Tessa wakes up for the night; Marcus dreams — he walks a dark, blurred forest with a flashlight. He hears Tessa with heavy reverb as if from where he sleeps: clearly while she is in the tower, fading away as she leaves it; he hears her doors and switches too, and her switching the tower light on floods his dream with light. Asleep, he is not heard by her at all. His opening card shows question marks instead of the time. In the morning Marcus has his coffee at the rail while Tessa is still in bed and gets up when she likes (Space).
-- **The trail to the campers' smoke (day 3)**: go together or one alone. Whoever reaches the trail head first waits for the partner, with one answer to go right away instead; together, one bear spray is enough. Whoever stays gets a task list (shut the boards, stoke the stove, restart the generator when it stalls) and then a nap; a partner done at the campfire earlier waits for that nap, and the evening starts for both, the napper waking in bed.
-- **Night 4 supper**: Kayla's recipe comes to Tessa; you cook from it together (every ingredient either of you puts in is in the dish for both); once baked, the oven holds two trays, a portion each, and you eat sitting on the bed, one at each end. The evening starts with the stove burning. Before sleeping Marcus has to go down to the porta-potty — and something may need checking on his way back.
-- **Night 5, one cultist for both**: the figure at the window, his round on the balcony, the ritual and his way down are the same for both. Scares stay personal: whoever makes him notice them is hunted, and the partner sees him run at them; after a death he is gone for the night and leaves the skull behind.
-: the stove goes out, the wind blows the blinds open.
+- **The story told by two.** While you are connected, the narration, the thoughts, Connor on the radio, the phone and everyone you meet speak to both of you: "we didn't know what to make of it", "you two", "new folks". The narrator is Jack Nelson and his partner. Lines about something only one of you does are worded without a person ("hands were full"). English and Russian; other languages keep the game's text.
+- **Your look**, picked in the Multiplayer menu (**Look**) in a 3D view with every pose: Marcus and Tessa (with Scratch Creek), the ranger, the waitress and the man in a suit (from Ironbark itself). **Role** is separate: Marcus (the host, in "auto") leads the story.
+- **Animations** from Scratch Creek when you have it, otherwise Ironbark's own. Flashlight and items are held in the hands.
+- **3D proximity voice**: full near you, fading out by about 12 m, muffled behind walls; Scratch Creek's speaking icon over the talker. In the credits you hear each other as on a call.
+- **A shared world**: doors, lights, generator, stove, blinds, items and night progress are the same for both, and either of you can do the tasks. Each of you has your own inventory.
+- **The diner**: Marcus sits where the food is served, Tessa across; the waitress brings each of you a tray.
+- **Rides**: driver and passenger seat, or stand in the cab. The ride's shake is felt inside; wheel, engine, horn and radio are shared.
+- **The tower**: one desk chair and one computer (booted once, windows shared). You read Connor's radio talks together and answer them together; coloured dots show who picked what.
+- **Sleep, Scratch Creek style**: whoever lies down first waits on their half of the bed; the night ends when both are in bed.
+- **Reading together**: on the black text screens, whoever reads faster waits for the other.
+- **Scares stay personal**: only the one who ran into a scare gets it.
+
+<details>
+<summary><b>⚠ Spoilers: night by night (story events)</b></summary>
+
+- **Night 2**: Tessa wakes up while Marcus dreams of a dark forest and hears her from far away.
+- **The trail to the smoke (day 3)**: go together or one alone. Whoever stays gets chores at the tower and then a nap.
+- **Night 4**: Kayla's recipe, cooked together; two trays from the oven and supper on the bed. Then Marcus's walk to the porta-potty.
+- **Night 5**: one cultist for both. Whoever he notices is hunted, and the partner sees it.
+- **Night 6**: the ranger's visit, the leftovers, firewood for the stove.
+- **Night 8 and the trail's end, chased as in Scratch Creek**: the cultist hunts the closest player who is not hidden (under the bed, in the porta-potty). A death is the team's: the partner sees it happen, then you both start the chase again. The run starts only when both of you are ready, so nobody is left behind.
+
+</details>
 
 ### Configuration
 
@@ -76,11 +102,12 @@ The code carries an address you can be reached at: external (if UPnP worked), el
 |---|---|
 | Character / Survivor | Story role: `auto`, `marcus` or `tessa`. |
 | Character / Look | How you look: `auto`, `marcus`, `tessa`, `ib-ranger`, `ib-waitress`, `ib-suitguy` (set from the menu). |
-| Character / ScratchCreekPath | Scratch Creek data folder, if it was not found automatically; `none` — don't use it. |
-| Session / PlayerName | Name over your character; empty — Steam or Windows name. |
+| Character / ScratchCreekPath | Scratch Creek data folder, if it was not found automatically; `none` means don't use it. |
+| Session / PlayerName | Name over your character; empty means your Steam or Windows name. |
 | Session / Code | Session code for connecting by IP (the same for both). |
 | Network / UPnP | Experimental automatic port opening. |
-| Voice / Mode, PushToTalkKey, ActivationThreshold, PartnerVolume, Microphone | Voice settings. |
+| Voice / Input | `VoiceActivation` (default), `PushToTalk` or `Off` (set from the menu). |
+| Voice / PushToTalkKey, ActivationLevel, PartnerVolume, Microphone | Push-to-talk key, the lowest level that opens the microphone, your partner's volume, the microphone to use. |
 
 ### What is in the release zip
 
@@ -99,17 +126,18 @@ The code carries an address you can be reached at: external (if UPnP worked), el
 ### Troubleshooting
 
 - The log is `BepInEx\LogOutput.log` in the game folder; lines from the mod start with `[Ironbark Cooperative]`.
-- "Version mismatch" — both must have the same game build code and the same mod version.
-- Cannot connect — try the host's Radmin VPN/ZeroTier address, allow the game in the Windows firewall, or forward port 25061 (TCP+UDP).
-- Marcus and Tessa are missing from the Look list — Scratch Creek was not found: set `Character / ScratchCreekPath`.
+- "Version mismatch": both must have the same game build code and the same mod version.
+- Cannot connect: try the host's Radmin VPN/ZeroTier address, allow the game in the Windows firewall, or forward port 25061 (TCP+UDP).
+- Your partner does not hear you: check the **Microphone** line in the Multiplayer menu and the corner mark while you speak. With a quiet microphone, lower `Voice / ActivationLevel`.
+- Marcus and Tessa are missing from the Look list: Scratch Creek was not found, so set `Character / ScratchCreekPath`.
 
 ### Status
 
-Tested automatically on two real copies of the game on one PC (29 test groups: network with packet loss and TCP fallback, menu and join code, avatars and animations, voice, shared story, personal scares and respawn, chores, every campaign scene, continue and reconnect, rides, diner, tower, nights 1–3 played end to end, the trail to the smoke together and alone, night 4's supper and Marcus's errand, night 5's cultist, night 6 (the morning, the ranger, the leftovers, the firewood), night 8's cultist and its chase, the trail's end chase, voice in the credits, the look picker, playing without Scratch Creek). Human playtests on one PC so far.
+Tested automatically on two real copies of the game on one PC (31 test groups: network with packet loss and TCP fallback, menu and join code, avatars and animations, voice and the voice gate, shared story, personal scares, chores, every campaign scene, continue and reconnect, rides, diner, tower, every night, both chases, the credits, the wording for two, playing without Scratch Creek). The whole campaign has been played through by people on one PC.
 
-**Not yet verified:** a session over the internet between two PCs, a live microphone, a full campaign played by people, UPnP on a real router, the Steam connection path.
+**Not yet verified:** a session over the internet between two PCs, UPnP on a real router, the Steam connection path.
 
-**Known limitations:** only the waitress and the ranger are synced, other NPCs are per player (for personal scares); getting in and out of vehicles has no animation; the partner's view of the computer screen is a small picture updated twice a second.
+**Known limitations:** only the waitress, the ranger and the cultists are synced, other NPCs are per player (for personal scares); getting in and out of vehicles has no animation; the partner's view of the computer screen is a small picture updated twice a second.
 
 ### Building from source
 
@@ -120,26 +148,30 @@ dotnet build src -c Release -p:GameDir="<game folder>" -p:LoaderDir="<BepInEx fo
 powershell -File tools\make-release.ps1 -Version <x.y.z> -LoaderDir "<BepInEx folder>"
 ```
 
-The build references the game's own assemblies from your install; none of them are in this repository. `tools\make-release.ps1` refuses to package any game file, decompiled source, `.pdb`, image or cache.
+The build references the game's own assemblies from your install; none of them are in this repository. `tools\make-release.ps1` refuses to package any game file, decompiled source, `.pdb`, image or cache. `src\Wording.json` holds the new wording for two (English and Russian lines that replace the game's ones while a partner is connected).
 
 ### Licence and credits
 
 - Mod source code: [MIT](LICENSE).
 - [BepInEx](https://github.com/BepInEx/BepInEx) (LGPL-2.1) with HarmonyX, MonoMod, Mono.Cecil (MIT); [Concentus](https://github.com/lostromb/concentus) (BSD-3-Clause); [AssetsTools.NET](https://github.com/nesrak1/AssetsTools.NET) and `classdata.tpk` from [UABEA](https://github.com/nesrak1/UABEA) (MIT); .NET System libraries (MIT). Details in [licenses/THIRD-PARTY.txt](licenses/THIRD-PARTY.txt).
-- Fears to Fathom, Ironbark Lookout and Scratch Creek belong to their owners.
+- Fears to Fathom, Ironbark Lookout and Scratch Creek belong to their owners. Screenshots show the mod running in the game.
 - Made with the help of an AI coding assistant (Claude, by Anthropic) under the author's direction and playtesting.
 
 ---
 
 ## Русский
 
-Вы оба проходите одну историю вместе, каждый в своём теле, со своим фонариком и инвентарём. Двигать сюжет может любой из вас, а напугать игра может только того, кто сам наткнулся на скример.
+Вы проходите весь эпизод вдвоём, от поездки до конца тропы. У каждого своё тело, свой фонарик и инвентарь. Двигать сюжет может любой из вас, а история рассказывается от вас обоих.
+
+### Скриншоты
+
+См. [английский раздел](#screenshots).
 
 ### Что нужно
 
 - **Fears to Fathom: Ironbark Lookout** у обоих, **одной версии**. Установщик покажет «код версии игры», и у вас с другом он должен совпасть.
-- **Fears to Fathom: Scratch Creek** — не обязательна. С ней можно выглядеть как Маркус или Тесса. Без неё выбираете одного из людей самой Ironbark (смотритель, официантка из закусочной, мужчина в костюме) — мод берёт их из вашей установленной Ironbark.
-- Windows x64.
+- **Fears to Fathom: Scratch Creek** не обязательна. С ней можно выглядеть как Маркус или Тесса. Без неё выбираете одного из людей самой Ironbark (смотритель, официантка из закусочной, мужчина в костюме): мод берёт их из вашей установленной Ironbark.
+- Windows x64, микрофон для голосового чата.
 - Одна сеть: локальная, виртуальная (**Radmin VPN**, ZeroTier, Tailscale) или открытый порт на роутере.
 
 ### Установка
@@ -165,40 +197,37 @@ The build references the game's own assemblies from your install; none of them a
 
 ### Управление
 
-- **V** (удерживать) — голос. В настройках можно включить активацию голосом или сменить клавишу.
-- **Ctrl** (удерживать) — присесть, как в Scratch Creek. Отпустили — встали (если над головой есть место).
-- **ЛКМ по пассажирскому сиденью** — сесть рядом с водителем, **Пробел** — встать.
-- **ЛКМ по варианту ответа** в разговоре партнёра по рации — ваш голос за ответ, **Пробел** — отойти от разговора.
-- **F8** — панель соединения во время игры.
+- **Просто говорите**: микрофон включается, когда вы говорите, как в Scratch Creek. Строка **«Микрофон»** в меню мультиплеера переключает: по голосу, по кнопке (**V**) или выключен. Небольшая метка в левом нижнем углу показывает, что вас слышно.
+- **Ctrl** (удерживать): присесть, как в Scratch Creek. Отпустили — встали (если над головой есть место).
+- **ЛКМ по пассажирскому сиденью**: сесть рядом с водителем. **Пробел**: встать.
+- **ЛКМ по варианту ответа** в разговоре партнёра по рации: ваш голос за ответ. **Пробел**: отойти от разговора.
 - Остальное — как в игре.
 
-### Как это ощущается в игре
+### Что вас ждёт
 
-- **Внешность выбираете сами** в меню мультиплеера («Внешность»): 3D-просмотр, модель крутится мышью, можно посмотреть все позы (стоит, идёт, бежит, присел, сидит, спит). На выбор: Маркус и Тесса (если есть Scratch Creek), смотритель, официантка и мужчина в костюме (из самой Ironbark). Если у партнёра нет вашего персонажа (нет Scratch Creek), он увидит похожего из Ironbark. **Роль** — отдельная настройка: сюжет ведёт Маркус (в режиме «авто» это хост).
-- **Анимации** из Scratch Creek, если она есть (и для людей из Ironbark тоже), иначе — из самой Ironbark. Голова поворачивается раньше тела, фонарик и предметы в руках держатся через IK.
-- **Голос в 3D:** в полную силу вблизи, дальше плавно затихает и пропадает примерно через 12 м, за стенами глуше. Над говорящим иконка речи из Scratch Creek. Голос и движение идут по UDP и не «заикаются» при потерях в сети.
-- **Сидящих и спящих видно и слышно:** в машине, в кабинке закусочной, за компьютером — голова сидящего там, где его камера. На стул у компьютера садится один (и через клик по монитору тоже): второму скажут «Это место занято».
-- **Спать ложатся вдвоём, как в Scratch Creek:** кто лёг первым, ждёт на своей половине кровати (Пробел — встать), ночь кончается, когда ляжет второй. Каждый спит на своей половине, партнёр лежит в позе сна из Scratch Creek.
-- **Вторая ночь, как в Scratch Creek:** ночью просыпается Тесса (рация в кровати, туалет, снова спать), а Маркус спит и видит сон: идёт с фонариком по тёмному лесу, картинка сначала сильно размыта и проясняется на первых шагах, слышен звук сна. Тессу он слышит с эхом, как будто с кровати: отчётливо, пока она в вышке, и всё тише, когда она уходит. Её двери и выключатели он тоже слышит, а включённый ею свет в вышке заливает его сон светом. Пока Маркус спит, Тесса его не слышит. Вместо времени в заставке ночи у него знаки вопроса. Для Тессы Маркус спит рядом. Когда Тесса ложится, наступает утро: Маркус стоит у перил с кофе, а Тесса ещё лежит в кровати и встаёт, когда захочет (Пробел).
-- **Поход к дыму кемперов (день 3):** можно вдвоём или одному. Кто первым дошёл до тропы, ждёт напарника; единственный ответ в окне — «Идти сразу». Вдвоём хватает одного баллончика от медведей. Кто остался, получает список заданий (закрыть ставни, подтопить печь, завести заглохший генератор) и потом дремлет; если напарник у костра управился раньше, он ждёт, пока оставшийся не ляжет. Вечер начинается у обоих, задремавший просыпается в кровати.
-- **Ужин в четвёртую ночь:** рецепт от Кайлы приходит Тессе, готовите по нему вместе (любой ингредиент, положенный кем угодно, лежит в блюде у обоих), после запекания в духовке два подноса, по порции каждому, а едите сидя на кровати, каждый со своего края. Вечер начинается с уже горящей печью. Перед сном Маркусу нужно спуститься в биотуалет — а на обратном пути, возможно, придётся кое-что проверить.
-- **Пятая ночь, один культист на двоих:** силуэт в окне, его обход балкона, ритуал и уход вниз — одни и те же у обоих. Испуги личные: на кого он обратил внимание, за тем и гонится, а напарник видит, как он бежит к нему; после гибели он уходит на всю ночь и оставляет череп.
- Маркус всегда садится на свою сторону стола (куда приносят еду), Тесса — напротив. Если Маркус уже сидит, клик Тессы по любому столу сажает её напротив него.
-- **Еда в закусочной:** каждому свой поднос. Официантка приносит поднос Маркусу, потом возвращается за вторым для Тессы; пока его не принесли, Маркус ждёт. Каждый ест только со своего подноса. С момента заказа до оплаты счёта за столом заказа не встаёт никто из тех, кто за ним сидит (как в одиночной игре).
-- **Сумка одна на двоих** во всех сценах: если её несёт партнёр, вас не остановят словами «надо забрать сумку». Положенная в фургон сумка едет вместе с ним и не мешает ему ехать. Ключ от вышки появляется у обоих.
-- **Что в руках, видно:** дрова, брошенные фонарики лежат у обоих (два брошенных — два фонарика, поднять может любой), зажжённые спички, спрей от медведей и канистра видны и слышны партнёру, пролитый бензин виден обоим.
-- **Компьютер на вышке один:** включают его один раз — второй сразу попадает на рабочий стол; пароль, обновление и открытые окна общие, на мониторе виден экран того, кто сейчас работает.
-- **Разговоры по рации вдвоём:** если вы на вышке, видите разговор партнёра (и слова собеседника, и ответы) и выбираете ответ вместе. Ответ засчитывается, когда оба выбрали одно и то же; чей выбор где — показывают точки цвета персонажа (Маркус — янтарная, Тесса — бирюзовая). Отошли или вышли из вышки — разговор идёт без вас.
-- **Скример в будке охранника** достаётся тому, кто вошёл первым; рейнджер потом ждёт Маркуса и заговаривает, когда тот подходит.
-- **Люди вокруг ведут Маркуса:** барменша в закусочной и рейнджер на старте тропы работают с Маркусом, Тесса видит всё то же самое и может сама поболтать с барменшей. Поход в туалет в закусочной — задача Тессы, еду принесут, когда она вернётся.
-- **Двери, свет, радио и музыка общие:** дверь фургона, туалеты (и биотуалет у вышки), фары и радио открываются и включаются у обоих, песня играет с одного места.
-- **Сюжет общий:** двери, свет, генератор, печь, жалюзи, предметы и прогресс ночи совпадают у обоих, и задания может выполнять любой.
-- **Инвентарь у каждого свой:** что взял, то у тебя, пока не положишь.
-- **Скримеры личные.** Второй игрок видит, как партнёр вздрагивает, и слышит вскрик, только если стоит рядом.
-- **Смерть одиночная:** погибший тихо возрождается в вышке, второй продолжает своё.
-- **Вступления, финал и титры** смотрите вместе.
-- **Поездки вдвоём:** тряска фургона ощущается и пассажиром, и стоящим в салоне; места независимые — кто сел за руль, тот ведёт, второй садится на пассажирское сиденье или едет стоя в салоне. Руль крутится, двигатель и гудок слышны обоим.
-- **Кооп-обязанности** в спокойные вечера (ночь 6): погасла печь, ветер распахнул жалюзи. Заглохший генератор временно отключён.
+- **История на двоих.** Пока вы подключены, рассказ, мысли, Коннор по рации, телефон и все, кого вы встречаете, обращаются к вам обоим: «мы не знали, что с этим делать», «вы», «новички». Рассказчики — Джек Нельсон и его напарник. Фразы о том, что делает только один из вас, звучат безлично («руки заняты»). На русском и английском; на других языках остаётся текст игры.
+- **Внешность** выбирается в меню мультиплеера («Внешность») в 3D-просмотре со всеми позами: Маркус и Тесса (со Scratch Creek), смотритель, официантка и мужчина в костюме (из самой Ironbark). **Роль** — отдельная настройка: сюжет ведёт Маркус (в режиме «авто» это хост).
+- **Анимации** из Scratch Creek, если она есть, иначе — из самой Ironbark. Фонарик и предметы в руках.
+- **Голос в 3D**: в полную силу вблизи, дальше затихает и пропадает примерно через 12 м, за стенами глуше. Над говорящим иконка речи из Scratch Creek. В титрах друг друга слышно как по телефону.
+- **Общий мир**: двери, свет, генератор, печь, жалюзи, предметы и прогресс ночи совпадают у обоих, а задания может выполнять любой. Инвентарь у каждого свой.
+- **Закусочная**: Маркус садится туда, куда приносят еду, Тесса — напротив; официантка приносит поднос каждому.
+- **Поездки**: водитель и пассажир, или стоя в салоне. Тряску чувствуют все в салоне; руль, двигатель, гудок и радио общие.
+- **Вышка**: один стул и один компьютер (включают его один раз, окна общие). Разговоры с Коннором по рации видите оба и отвечаете вместе; цветные точки показывают, кто что выбрал.
+- **Сон, как в Scratch Creek**: кто лёг первым, ждёт на своей половине кровати; ночь кончается, когда легли оба.
+- **Читаете вместе**: на чёрных экранах с текстом тот, кто прочитал быстрее, ждёт другого.
+- **Скримеры личные**: пугается только тот, кто сам на них наткнулся.
+
+<details>
+<summary><b>⚠ Спойлеры: что происходит по ночам (события сюжета)</b></summary>
+
+- **Вторая ночь**: просыпается Тесса, а Маркусу снится тёмный лес, и он слышит её издалека.
+- **Поход к дыму (день 3)**: вдвоём или одному. Кто остался, получает дела на вышке, а потом дремлет.
+- **Четвёртая ночь**: рецепт Кайлы готовите вместе, из духовки два подноса, ужин на кровати. Потом поход Маркуса к биотуалету.
+- **Пятая ночь**: один культист на двоих. Кого он заметил, за тем и гонится, а напарник это видит.
+- **Шестая ночь**: визит рейнджера, остатки ужина, дрова для печи.
+- **Восьмая ночь и конец тропы, погони как в Scratch Creek**: культист гонится за ближайшим, кто не спрятался (под кроватью, в биотуалете). Смерть общая: напарник видит, как это происходит, и погоня начинается заново для обоих. Бежать можно, только когда готовы оба, так что никто не останется позади.
+
+</details>
 
 ### Настройки
 
@@ -212,7 +241,8 @@ The build references the game's own assemblies from your install; none of them a
 | Session / PlayerName | Ник над персонажем; пусто — имя Steam или Windows. |
 | Session / Code | Код сессии для подключения по IP (у обоих одинаковый). |
 | Network / UPnP | Экспериментальное автоматическое открытие порта. |
-| Voice / Mode, PushToTalkKey, ActivationThreshold, PartnerVolume, Microphone | Настройки голоса. |
+| Voice / Input | `VoiceActivation` (по умолчанию), `PushToTalk` или `Off` (выбирается в меню). |
+| Voice / PushToTalkKey, ActivationLevel, PartnerVolume, Microphone | Клавиша рации, самый тихий уровень, при котором включается микрофон, громкость напарника, какой микрофон использовать. |
 
 ### Что лежит в архиве релиза
 
@@ -231,25 +261,26 @@ The build references the game's own assemblies from your install; none of them a
 ### Если что-то не так
 
 - Лог — `BepInEx\LogOutput.log` в папке игры; строки мода начинаются с `[Ironbark Cooperative]`.
-- «Несовпадение версий» — у обоих должны совпадать код версии игры и версия мода.
-- Не подключается — попробуйте адрес хоста в Radmin VPN/ZeroTier, разрешите игру в брандмауэре Windows или откройте порт 25061 (TCP+UDP).
-- В списке внешностей нет Маркуса и Тессы — Scratch Creek не найдена: укажите `Character / ScratchCreekPath`.
+- «Несовпадение версий»: у обоих должны совпадать код версии игры и версия мода.
+- Не подключается: попробуйте адрес хоста в Radmin VPN/ZeroTier, разрешите игру в брандмауэре Windows или откройте порт 25061 (TCP+UDP).
+- Напарник вас не слышит: проверьте строку «Микрофон» в меню мультиплеера и метку в углу, пока говорите. Если микрофон тихий, уменьшите `Voice / ActivationLevel`.
+- В списке внешностей нет Маркуса и Тессы: Scratch Creek не найдена, укажите `Character / ScratchCreekPath`.
 
 ### Что проверено и что нет
 
-Проверено автотестами на двух настоящих копиях игры на одном компьютере (29 групп тестов): сеть с потерями и переход на TCP, меню и код подключения, персонажи и анимации, голос, общий сюжет, личные скримеры и возрождение, обязанности, все сцены кампании, продолжение и переподключение, поездки, закусочная, вышка, ночи 1–3 целиком, поход к дыму вдвоём и одному, ужин и поход Маркуса в четвёртую ночь, культист пятой ночи, шестая ночь (утро, рейнджер, остатки ужина, дрова), культист и погоня восьмой ночи, погоня в конце тропы, голос в титрах, выбор внешности, игра без Scratch Creek. Живые плейтесты пока — на одном компьютере.
+Проверено автотестами на двух настоящих копиях игры на одном компьютере (31 группа тестов): сеть с потерями и переход на TCP, меню и код подключения, персонажи и анимации, голос и его включение по речи, общий сюжет, личные скримеры, обязанности, все сцены кампании, продолжение и переподключение, поездки, закусочная, вышка, все ночи, обе погони, титры, текст на двоих, игра без Scratch Creek. Вся кампания пройдена людьми на одном компьютере.
 
-Ещё **не** проверено: игра через интернет между двумя ПК, живой микрофон, полное прохождение людьми, UPnP на реальном роутере, подключение через Steam.
+Ещё **не** проверено: игра через интернет между двумя ПК, UPnP на реальном роутере, подключение через Steam.
 
-**Известные ограничения:** синхронизируются только барменша и рейнджер, остальные NPC у каждого свои (ради личных скримеров); посадка в машину и выход без анимации; картинка экрана компьютера у партнёра небольшая и обновляется дважды в секунду.
+**Известные ограничения:** синхронизируются только официантка, рейнджер и культисты, остальные NPC у каждого свои (ради личных скримеров); посадка в машину и выход без анимации; картинка экрана компьютера у партнёра небольшая и обновляется дважды в секунду.
 
 ### Сборка из исходников
 
-Нужны .NET SDK (6+), установленная игра и распакованный [BepInEx 5.4.23.5 x64](https://github.com/BepInEx/BepInEx/releases/tag/v5.4.23.5). Команды — в английском разделе выше. Сборка ссылается на библиотеки игры из вашей установки; в репозитории их нет.
+Нужны .NET SDK (6+), установленная игра и распакованный [BepInEx 5.4.23.5 x64](https://github.com/BepInEx/BepInEx/releases/tag/v5.4.23.5). Команды — в английском разделе выше. Сборка ссылается на библиотеки игры из вашей установки; в репозитории их нет. В `src\Wording.json` лежат новые фразы на двоих (строки на русском и английском, которые заменяют фразы игры, пока подключён напарник).
 
 ### Лицензия и благодарности
 
 - Исходный код мода: [MIT](LICENSE).
 - BepInEx (LGPL-2.1), HarmonyX, MonoMod, Mono.Cecil (MIT), Concentus (BSD-3), AssetsTools.NET и `classdata.tpk` из UABEA (MIT), библиотеки .NET (MIT). Подробно: [licenses/THIRD-PARTY.txt](licenses/THIRD-PARTY.txt).
-- Fears to Fathom, Ironbark Lookout и Scratch Creek принадлежат их владельцам.
+- Fears to Fathom, Ironbark Lookout и Scratch Creek принадлежат их владельцам. На скриншотах — мод в игре.
 - Сделано с помощью ИИ-ассистента (Claude от Anthropic) под руководством автора и по его плейтестам.

@@ -137,8 +137,8 @@ namespace IronbarkCoop
     {
         Text title, hostSlot, partnerSlot, status, addresses;
         RectTransform hostButton, joinButton, steamButton, inviteButton, playButton, leaveButton, ipRow, copyButton, upnpButton;
-        Text upnpLabel, characterLabel, lookLabel, poseLabel, lookName;
-        RectTransform characterButton, lookButton, prevButton, nextButton, poseButton, chooseButton, closeButton;
+        Text upnpLabel, characterLabel, lookLabel, poseLabel, lookName, micLabel;
+        RectTransform characterButton, lookButton, micButton, prevButton, nextButton, poseButton, chooseButton, closeButton;
         CharacterPreview preview;
         bool previewOpen;
         int lookIndex;
@@ -197,6 +197,11 @@ namespace IronbarkCoop
             lookButton.anchoredPosition = new Vector2(bx, top - 283f);
             lookLabel = lookButton.GetComponent<Text>();
             lookLabel.fontSize = 13;
+            // The microphone: on speech (as in Scratch Creek), push-to-talk or off.
+            micButton = MultiplayerMenu.Clone(big, transform, "microphone", "", () => Plugin.Instance?.NextMicrophone());
+            micButton.anchoredPosition = new Vector2(bx, top - 245f);
+            micLabel = micButton.GetComponent<Text>();
+            micLabel.fontSize = 13;
             float py = top - 122f;
             prevButton = MultiplayerMenu.Clone(big, transform, "look prev", L("‹ Пред.", "‹ Prev"), () => Step(-1));
             prevButton.anchoredPosition = new Vector2(bx, py); py -= 31f;
@@ -297,7 +302,7 @@ namespace IronbarkCoop
             preview.gameObject.SetActive(previewOpen);
             if (back) back.gameObject.SetActive(!previewOpen);
             if (!previewOpen) return false;
-            foreach (var control in new Component[] { hostSlot, partnerSlot, status, addresses, hostButton, joinButton, ipRow, steamButton, inviteButton, playButton, leaveButton, copyButton, upnpButton, characterButton, lookButton })
+            foreach (var control in new Component[] { hostSlot, partnerSlot, status, addresses, hostButton, joinButton, ipRow, steamButton, inviteButton, playButton, leaveButton, copyButton, upnpButton, characterButton, lookButton, micButton })
                 control.gameObject.SetActive(false);
             var looks = ScRuntime.Available();
             var look = looks.Count > 0 ? looks[lookIndex % looks.Count] : null;
@@ -346,6 +351,9 @@ namespace IronbarkCoop
             characterLabel.text = L("Роль: ", "Role: ") + (plugin.CharacterSetting == "auto" ? L("авто (хост — Маркус)", "auto (host is Marcus)") : Name(plugin.CharacterSetting));
             if (connected && plugin.PartnerCharacter != null)
                 partnerSlot.text += "  (" + Name(plugin.PartnerCharacter) + ")";
+            micButton.gameObject.SetActive(true);
+            micLabel.text = L("Микрофон: ", "Microphone: ") + (plugin.MicMode == VoiceMode.VoiceActivation ? L("по голосу", "voice activated")
+                : plugin.MicMode == VoiceMode.PushToTalk ? L("удерживать ", "hold ") + plugin.TalkKey : L("выкл", "off"));
             upnpLabel.text = L("Авто-порт UPnP (эксперимент): ", "Auto port UPnP (experimental): ") + (plugin.UpnpEnabled ? L("вкл", "on") : L("выкл", "off"));
             if (waitingHost && plugin.HostCode != null)
                 status.text = L("Код для друга: ", "Code for your friend: ") + plugin.HostCode + (plugin.UpnpEnabled ? "   (UPnP: " + plugin.UpnpState + ")" : "");

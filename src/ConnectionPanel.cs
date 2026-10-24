@@ -7,7 +7,7 @@ using UnityEngine.Localization.Settings;
 
 namespace IronbarkCoop
 {
-    // Helpers for the F8 panel: the player's own addresses (LAN / virtual LAN) and readable connection errors.
+    // Helpers for the Multiplayer menu: the player's own addresses (LAN / virtual LAN) and readable connection errors.
     internal static class ConnectionPanel
     {
         static List<string> addresses = new List<string>();

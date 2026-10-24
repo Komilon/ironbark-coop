@@ -120,8 +120,8 @@ namespace IronbarkCoop
             if (closed && wall && InZone(me) && Time.unscaledTime >= nextWallLine)
             {
                 nextWallLine = Time.unscaledTime + 8f;
-                string partner = string.IsNullOrEmpty(plugin.PartnerName) ? ConnectionPanel.L("напарника", "my partner") : plugin.PartnerName;
-                Gm.subtitle.ShowSubAndClose(string.Format(ConnectionPanel.L("Подожду {0}, дальше пойдём вместе.", "I'll wait for {0}; we go on together."), partner), 4f);
+                string partner = string.IsNullOrEmpty(plugin.PartnerName) ? ConnectionPanel.L("напарника", "the partner") : plugin.PartnerName;
+                Gm.subtitle.ShowSubAndClose(string.Format(ConnectionPanel.L("Нужно дождаться {0}, дальше пойдём вместе.", "Need to wait for {0}; we go on together."), partner), 4f);
             }
             if (started || !Lead || resetting) return;
             bool meIn = SharedChase.Ghost || InZone(me);

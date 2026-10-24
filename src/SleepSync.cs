@@ -215,7 +215,7 @@ namespace IronbarkCoop
             Waiting = true;
             yield return Fade(ui, false);
             moving = false;
-            gm.subtitle.ShowSubAndClose(ConnectionPanel.L("Подожду, пока ляжет и партнёр.", "I'll wait for my partner to lie down too."), 3f);
+            gm.subtitle.ShowSubAndClose(ConnectionPanel.L("Нужно дождаться, пока ляжет и напарник.", "Need to wait for the partner to lie down too."), 3f);
             Plugin.Log("SLEEP_WAITING night " + nextNight);
         }
 

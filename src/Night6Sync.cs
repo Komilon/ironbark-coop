@@ -66,7 +66,7 @@ namespace IronbarkCoop
             if (!holding || !tower.seq6FoodEaten || !tower.seq6ReportDone || Time.unscaledTime < nextWaitLine) return;
             nextWaitLine = Time.unscaledTime + 6f;
             string partner = string.IsNullOrEmpty(plugin.PartnerName) ? ConnectionPanel.L("Маркус", "Marcus") : plugin.PartnerName;
-            Gm.subtitle.ShowSubAndClose(string.Format(ConnectionPanel.L("{0} принесёт дрова снизу. Подожду наверху, у печки.", "{0} is bringing the firewood up. I'll wait upstairs by the stove."), partner), 5f);
+            Gm.subtitle.ShowSubAndClose(string.Format(ConnectionPanel.L("{0} принесёт дрова снизу. Лучше подождать наверху, у печки.", "{0} is bringing the firewood up. Better wait upstairs by the stove."), partner), 5f);
         }
 
         void Send(string code) => plugin.Send(new Packet { kind = "night6", code = code, scene = SceneManager.GetActiveScene().name });

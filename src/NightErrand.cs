@@ -49,8 +49,8 @@ namespace IronbarkCoop
                     // porta-potty with the door shut, a click on it (seq7peeTrigger) and the game does the rest.
                     if (thought < 2 && Time.unscaledTime >= stepAt)
                     {
-                        Think(thought == 0 ? ConnectionPanel.L("После такого плотного ужина мне захотелось в биотуалет.", "After a supper like that I need the porta-potty.")
-                            : ConnectionPanel.L("Как я помню, он находится внизу.", "As I remember, it's downstairs."), 4.5f);
+                        Think(thought == 0 ? ConnectionPanel.L("После такого плотного ужина захотелось в биотуалет.", "After a supper like that, the porta-potty calls.")
+                            : ConnectionPanel.L("Кажется, он внизу.", "It's downstairs, if memory serves."), 4.5f);
                         thought++; stepAt = Time.unscaledTime + 5f;
                     }
                     if (tower.seqPeed) { step = Step.Relieving; Plugin.Log("ERRAND_RELIEVING"); }
@@ -98,7 +98,7 @@ namespace IronbarkCoop
                 Begin(0f);
                 return false;
             }
-            Think(step == Step.Flicker ? ConnectionPanel.L("Сначала проверю, что там в гараже.", "First I'll check what's going on in the garage.")
+            Think(step == Step.Flicker ? ConnectionPanel.L("Сначала надо проверить, что там в гараже.", "The garage first: something's going on there.")
                 : ConnectionPanel.L("Сначала схожу в туалет.", "The toilet first."), 3f);
             return false;
         }
@@ -141,7 +141,7 @@ namespace IronbarkCoop
             Local(tower.peeStairsBlock, true); Local(tower.peeStairsTrigger, true);
             tower.peeStairsBlock.SetActive(true); tower.peeStairsTrigger.SetActive(true);
             yield return LookAt(tower, tower.shedLight ? tower.shedLight.transform.position : tower.transform.position, 2.8f);
-            Think(ConnectionPanel.L("Что это?.. В гараже мигает свет. Надо проверить.", "What's that?.. The light in the garage is flickering. I should check."), 5f);
+            Think(ConnectionPanel.L("Что это?.. В гараже мигает свет. Надо проверить.", "What's that?.. The light in the garage is flickering. Better check."), 5f);
         }
 
         void Local(GameObject target, bool on)
@@ -276,7 +276,7 @@ namespace IronbarkCoop
         IEnumerator TimeForBed()
         {
             yield return new WaitForSeconds(6f);
-            if (Gm && !Gm.isConversing) Think(ConnectionPanel.L("Думаю, пора ложиться спать.", "I think it's time for bed."), 4f);
+            if (Gm && !Gm.isConversing) Think(ConnectionPanel.L("Пожалуй, пора ложиться спать.", "Time for bed, it seems."), 4f);
             Plugin.Log("ERRAND_PARTNER_BEDTIME");
         }
 

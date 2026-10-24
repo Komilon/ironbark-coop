@@ -2,6 +2,28 @@
 
 Both players must use the same mod version. / У обоих игроков должна быть одна версия мода.
 
+## 0.12.0 — the story told by two, the microphone opens on speech, a clear voice in the credits / история на двоих, микрофон по голосу, чистый голос в титрах
+
+Protocol 16: both players need 0.12.0. / Протокол 16: обоим нужна 0.12.0.
+
+**English**
+- The story is told by two. While a partner is connected, the narration, the thoughts, the radio talks, the phone and what people say to you are worded for both: "we didn't know what to make of it", "you two", "new folks"; the narrator is Jack Nelson and his partner. Lines about something one player does alone are worded without a person ("hands were full"). English and Russian; other languages keep the game's text. Played alone, the game's own lines come back.
+- The mod's own lines (waiting for the partner, the chores, the nap) are worded the same way.
+- The microphone opens when you speak, as in Scratch Creek. No key to hold. It adapts to the noise in your room, keeps the start of the first word and stays open through short pauses. The Multiplayer menu switches it: voice activated, push-to-talk (V) or off. A small mark in the corner shows when you are heard.
+- The credits: the partner is heard clearly and loudly. The muffling for walls from the last scene stayed on there, and the voice was quiet under the music.
+- The crouch hint now says Ctrl (held), as the mod uses.
+- The F8 panel is gone; everything is in the Multiplayer menu.
+- The playtest shortcuts (Ctrl+F9, Ctrl+F10, Ctrl+F11) are gone.
+
+**Русский**
+- История рассказывается от двоих. Пока напарник подключён, рассказ, мысли, разговоры по рации, телефон и реплики людей обращены к обоим: «мы не знали, что с этим делать», «вы», «новички»; рассказчики — Джек Нельсон и его напарник. Фразы о том, что делает только один игрок, звучат безлично («руки заняты»). На английском и русском; на других языках остаётся текст игры. В одиночной игре возвращаются фразы самой игры.
+- Собственные фразы мода (ожидание напарника, дела, дрёма) переписаны так же.
+- Микрофон включается, когда вы говорите, как в Scratch Creek. Держать клавишу не нужно. Он подстраивается под шум в комнате, не съедает начало первого слова и не закрывается в коротких паузах. В меню «Мультиплеер» можно переключить: по голосу, по кнопке (V) или выключен. Небольшая метка в углу показывает, что вас слышно.
+- Титры: напарника слышно чисто и громко. Там оставалось приглушение «за стеной» из прошлой сцены, и голос тонул в музыке.
+- Подсказка «присесть» теперь говорит про Ctrl (удерживать), как и работает мод.
+- Панели F8 больше нет: всё есть в меню «Мультиплеер».
+- Убраны клавиши для плейтестов (Ctrl+F9, Ctrl+F10, Ctrl+F11).
+
 ## 0.11.3 — the photo line fixed, the binoculars moment always comes / исправлена строка про снимок, момент с биноклем приходит всегда
 
 Protocol 15: both players need 0.11.3. / Протокол 15: обоим нужна 0.11.3.

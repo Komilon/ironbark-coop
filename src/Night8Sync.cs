@@ -444,7 +444,7 @@ namespace IronbarkCoop
         // keeps that target until the kill; the other one sees and hears it) ----
         // Either world's game noticing its own player (Seq8JumpscareInitialize) only alerts him: the story lead's world
         // then chooses between both players, the seen one and whoever is not hiding (under the bed, in the porta-potty),
-        // and the closer one is hunted in their own world. A player in test mode (Ctrl+F9) is never chosen.
+        // and the closer one is hunted in their own world. A player in the lab's test mode is never chosen.
         string target;
         float askAt;
 
@@ -624,11 +624,11 @@ namespace IronbarkCoop
             if (closed && ready && wall && Time.unscaledTime >= nextWallLine && NearWall())
             {
                 nextWallLine = Time.unscaledTime + 7f;
-                Gm.subtitle.ShowSubAndClose(string.Format(ConnectionPanel.L("Без {0} не побегу. Подожду, пока выйдет.", "Not without {0}. I'll wait until they're out."), PartnerName()), 4f);
+                Gm.subtitle.ShowSubAndClose(string.Format(ConnectionPanel.L("Без {0} бежать нельзя. Нужно дождаться.", "Not without {0}. Need to wait until they're out."), PartnerName()), 4f);
             }
         }
 
-        string PartnerName() => string.IsNullOrEmpty(plugin.PartnerName) ? ConnectionPanel.L("напарника", "my partner") : plugin.PartnerName;
+        string PartnerName() => string.IsNullOrEmpty(plugin.PartnerName) ? ConnectionPanel.L("напарника", "the partner") : plugin.PartnerName;
 
         // Just outside the tower door, across the walkway both ways (north to the stairs, south round the tower): he
         // waits in front of the stairs, so the wall is between the door and him (playtest). Built from the game's own

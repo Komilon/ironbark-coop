@@ -8,6 +8,8 @@ namespace IronbarkCoop
         internal VoiceBuffer Buffer;
         // Source samples (48 kHz) per output sample; set from AudioSettings.outputSampleRate on the main thread.
         internal double Step = 1.0;
+        // Extra loudness (on a call, the credits); peaks are rounded off instead of clipping.
+        internal volatile float Boost = 1f;
         // The carrier clip is constant 1.0, so data already carries Unity's distance attenuation and panning.
         float[] mono = new float[0], source = new float[0], fresh = new float[0];
         double phase;
@@ -24,6 +26,8 @@ namespace IronbarkCoop
             if (mono.Length != frames) mono = new float[frames];
             if (Math.Abs(Step - 1.0) < 1e-9) buffer.Read(mono);
             else Resample(buffer, frames);
+            float boost = Boost;
+            if (boost > 1.001f) for (int i = 0; i < frames; i++) mono[i] = (float)Math.Tanh(mono[i] * boost);
             double energy = 0;
             for (int frame = 0; frame < frames; frame++)
                 for (int channel = 0; channel < channels; channel++)
