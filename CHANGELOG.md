@@ -2,6 +2,24 @@
 
 Both players must use the same mod version. / У обоих игроков должна быть одна версия мода.
 
+## 0.11.2 — the photo is the spotter's, the heartbeat ends for both, the wait at the tower door / снимок за тем, кто увидел, сердцебиение стихает у обоих, ожидание у двери вышки
+
+Protocol 14: both players need 0.11.2. / Протокол 14: обоим нужна 0.11.2.
+
+**English**
+- Night 8: whoever spots the camp through the binoculars first takes the photo. The partner gets the music and the first thought, and, at the camera, the line "Your partner is the one to photograph the camp." The camera stays shut for them. A later look through the binoculars by the partner does not start the moment again.
+- Night 8: the heartbeat while he searches downstairs now stops for both when he has passed (it went on for the partner, even out from under the bed).
+- Night 8: the invisible wall is now just outside the tower door, across the walkway both ways (to the stairs and round the tower), since he waits in front of the stairs. It holds whoever is up while the partner is still in or under the bed.
+- Night 8: the cultist could stall on his way up from the camp (the fleeing campers jammed him): he no longer steers around them, and he is moved on if he stands running in place.
+- The trail's end: when the ending starts (one player reached the RV), the chase stops for the other too. Before, his running and the music went on under the black screen.
+
+**Русский**
+- Ночь 8: кто первым увидел лагерь в бинокль, тот и фотографирует. Напарник получает музыку и первую мысль, а у камеры — строку «Снимок лагеря должен сделать ваш напарник.». Камера ему закрыта. Если напарник потом сам посмотрит в бинокль, момент не запустится снова.
+- Ночь 8: сердцебиение, пока культист ищет внизу, теперь стихает у обоих, когда он прошёл (у напарника оно продолжалось, даже когда он вылез из-под кровати).
+- Ночь 8: невидимая стена теперь сразу за дверью вышки, поперёк дорожки в обе стороны (к лестнице и в обход вышки), потому что культист ждёт перед лестницей. Она держит того, кто встал, пока напарник ещё в кровати или под ней.
+- Ночь 8: культист мог застрять по пути из лагеря (его зажимали разбегающиеся культисты): теперь он их не обходит, а если бежит на месте, его продвигает дальше.
+- Конец тропы: когда начинается финал (один игрок добежал до фургона), погоня останавливается и у второго. Раньше под чёрным экраном продолжались его бег и музыка.
+
 ## 0.11.1 — night 8's photo for both, the trail's end chase in its place, restart shortcuts / снимок восьмой ночи для обоих, погоня у фургона на своём месте, кнопки перезапуска
 
 Protocol 13: both players need 0.11.1. / Протокол 13: обоим нужна 0.11.1.

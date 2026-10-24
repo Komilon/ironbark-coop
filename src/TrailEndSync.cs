@@ -250,6 +250,20 @@ namespace IronbarkCoop
             if (plugin.Ready && Here) Send("rv", inside);
         }
 
+        internal void Ending()
+        {
+            var tm = Manager;
+            if (!Here || !tm) return;
+            target = "ending"; huntPartner = false;
+            tm.StopCultist();
+            tm.cultistChasing = false; tm.cultistHaunting = false;
+            foreach (var a in new[] { tm.chaseAS, tm.hauntingAS, tm.heartBeatAS }) if (a) a.Stop();
+            var c = tm.cultist;
+            if (c) { if (c.runningOnGrassAS) c.runningOnGrassAS.Stop(); c.StopAllCoroutines(); if (c.navMeshAgent && c.navMeshAgent.enabled) c.navMeshAgent.isStopped = true; c.gameObject.SetActive(false); }
+            SharedChase.StopHearingHunt();
+            Plugin.Log("TRAILEND_ENDING_STOPS_CHASE");
+        }
+
         // ---- a death is the team's ----
         internal void KillStarts() { if (plugin.Ready && Here) Send("kill"); }
 
@@ -390,5 +404,16 @@ namespace IronbarkCoop
     internal static class TrailEndFollowPatch
     {
         static bool Prefix(CultistTrailEnd __instance) => TrailEndSync.Instance == null || TrailEndSync.Instance.LetFollow(__instance);
+    }
+}
+
+namespace IronbarkCoop
+{
+    // The ending (FadeOutWithOutro, also when it comes from the partner who reached the RV): the chase stops here too.
+    // Before, the music and his running went on under the black screen of the ending (playtest).
+    [HarmonyPatch(typeof(UIManager), nameof(UIManager.FadeOutWithOutro))]
+    internal static class TrailEndOutroPatch
+    {
+        static void Prefix() => TrailEndSync.Instance?.Ending();
     }
 }

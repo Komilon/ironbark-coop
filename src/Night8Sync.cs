@@ -36,6 +36,7 @@ namespace IronbarkCoop
         internal bool Copy => plugin.Ready && !plugin.LeadsStory && Night8 && !localHunt;
         internal static bool Applying;
 
+        bool copyAtX;
         bool on, localHunt, huntPartner, gone, fled, havePose;
         float nextPose, nextChase;
         Transform partnerMark;
@@ -53,6 +54,8 @@ namespace IronbarkCoop
                 return (Lead ? "lead" : localHunt ? "hunted" : "copy") + "/" + (c.gameObject.activeSelf ? "on" : "off") + "/" + c.area + "/x" + (c.isGoingToX ? "g" : "") + (c.isAtX ? "a" : "") + (c.isChase ? "/chase" : "")
                     + "/" + c.transform.position.x.ToString("F1", CultureInfo.InvariantCulture) + ";" + c.transform.position.z.ToString("F1", CultureInfo.InvariantCulture)
                     + (huntPartner ? "/huntPartner" : "") + (gone ? "/gone" : "") + (tower.seq8FlashWentOff ? "/flash" : "") + (fled ? "/fled" : "") + "/me" + tower.area + "/door" + (tower.isDoorOpen ? 1 : 0)
+                    + (Lead && c.navMeshAgent && c.navMeshAgent.enabled ? "/v" + c.navMeshAgent.velocity.magnitude.ToString("F1", CultureInfo.InvariantCulture) + c.navMeshAgent.pathStatus.ToString().Substring(4, 3) + (c.navMeshAgent.isStopped ? "S" : "") + "r" + c.navMeshAgent.remainingDistance.ToString("F0", CultureInfo.InvariantCulture) : "")
+                    + (tower.horrorHeartBeatAS && tower.horrorHeartBeatAS.isPlaying ? "/hb" : "") + (wall && wall.activeSelf ? "/wall" : "")
                     + (Copy && havePose ? "/lag" + Vector3.Distance(c.transform.position, toPosition).ToString("F2", CultureInfo.InvariantCulture) + "@" + (Time.unscaledTime - poseAt).ToString("F1", CultureInfo.InvariantCulture) : "");
             }
         }
@@ -61,7 +64,7 @@ namespace IronbarkCoop
 
         internal void Reset()
         {
-            on = false; flashedHere = false; localHunt = false; huntPartner = false; gone = false; fled = false; havePose = false; toAnim = int.MinValue; soundBits = 0;
+            on = false; flashedHere = false; partnerSpotted = false; localHunt = false; huntPartner = false; gone = false; fled = false; havePose = false; toAnim = int.MinValue; soundBits = 0;
             target = null; askAt = 0f; resetting = false; chaseStarted = false; partnerReady = false; sentReady = false;
             if (partnerMark) Object.Destroy(partnerMark.gameObject);
             partnerMark = null;
@@ -78,14 +81,45 @@ namespace IronbarkCoop
             var cultist = tower.cultistSeq8;
             // The partner took the photo: the camp scatters here too.
             if (tower.seq8FlashWentOff && !fled) CampFlees(tower);
+            PhotoHint(tower);
             if (tower.seq8FlashWentOff && Gm.uIManager && Gm.uIManager.controlsText.text == F2FLocalizedText.GetLocalizedText("ep4_controls", "TakePhoto")) Gm.uIManager.controlsText.text = "";
             Gate(tower);
+            // The campers running off after the photo could jam him on the narrow way up (he stood still at J): he does
+            // not steer round them.
+            if (Lead && cultist.navMeshAgent && cultist.navMeshAgent.obstacleAvoidanceType != UnityEngine.AI.ObstacleAvoidanceType.NoObstacleAvoidance) cultist.navMeshAgent.obstacleAvoidanceType = UnityEngine.AI.ObstacleAvoidanceType.NoObstacleAvoidance;
+            if (Lead && cultist.TryGetComponent<Rigidbody>(out var body) && !body.isKinematic) body.isKinematic = true;
+            if (Lead) Unstick(cultist);
             if (Lead)
             {
                 if (huntPartner) ChasePartner(tower, cultist);
                 if (Time.unscaledTime >= nextPose && (cultist.gameObject.activeSelf || on)) { nextPose = Time.unscaledTime + 0.1f; SendPose(cultist); }
             }
             else if (Copy && cultist.navMeshAgent && cultist.navMeshAgent.enabled) cultist.navMeshAgent.enabled = false;
+            // The copy has reached X (from the lead's pose): his search is over here too, whatever came over the wire.
+            if (Copy && cultist.isAtX && !copyAtX && !tower.seq8JumpscareHaunting)
+            {
+                if (tower.horrorHeartBeatAS && tower.horrorHeartBeatAS.isPlaying) Gm.StartCoroutine(FadeAudioSource.FadeToZeroAndReset(tower.horrorHeartBeatAS, 1.5f, 1f));
+                if (tower.tensionAS) tower.tensionAS.Stop();
+                Gm.StartCoroutine(FadeMixerGroup.StartFade(Gm.audioMixer, "Ambience", 1f, 0f));
+                Plugin.Log("CULTIST8_COPY_AT_X");
+            }
+            copyAtX = Copy && cultist.isAtX;
+        }
+
+        // He stood running in place at J (the agent moving, the body not): pushed along his path a step.
+        Vector3 lastSpot; float lastSpotAt;
+        void Unstick(CultistSeq8 c)
+        {
+            var agent = c.navMeshAgent;
+            if (!c.gameObject.activeInHierarchy || !agent || !agent.enabled || !agent.isOnNavMesh || !agent.hasPath || agent.isStopped || agent.desiredVelocity.magnitude < 0.5f)
+            { lastSpot = c.transform.position; lastSpotAt = Time.time; return; }
+            if ((c.transform.position - lastSpot).sqrMagnitude > 0.09f) { lastSpot = c.transform.position; lastSpotAt = Time.time; return; }
+            if (Time.time - lastSpotAt < 1.5f) return;
+            var destination = agent.destination;
+            var step = Vector3.MoveTowards(c.transform.position, agent.steeringTarget, 1.5f);
+            if (UnityEngine.AI.NavMesh.SamplePosition(step, out var hit, 1f, UnityEngine.AI.NavMesh.AllAreas)) { agent.Warp(hit.position); agent.SetDestination(destination); }
+            lastSpot = c.transform.position; lastSpotAt = Time.time;
+            Plugin.Log("CULTIST8_UNSTUCK at " + lastSpot.ToString("F1"));
         }
 
         void Send(string code, string name = null) => plugin.Send(new Packet { kind = "cultist8", code = code, name = name, scene = SceneManager.GetActiveScene().name });
@@ -223,6 +257,8 @@ namespace IronbarkCoop
                         break;
                     case "at-x":
                         Gm.StartCoroutine(FadeMixerGroup.StartFade(Gm.audioMixer, "Ambience", 1f, 0f));
+                        if (tower.tensionAS) tower.tensionAS.Stop();
+                        Plugin.Log("CULTIST8_AT_X_FROM_LEAD hb=" + (tower.horrorHeartBeatAS && tower.horrorHeartBeatAS.isPlaying));
                         if (tower.horrorHeartBeatAS) Gm.StartCoroutine(FadeAudioSource.FadeToZeroAndReset(tower.horrorHeartBeatAS, 1f));
                         break;
                     case "cmd":
@@ -270,6 +306,9 @@ namespace IronbarkCoop
                         break;
                     case "cult-seen":
                         CultSeenHere(tower);
+                        break;
+                    case "hb":
+                        if (packet.active) tower.HeartBeatAndNoAmb(); else tower.HeartBeatStopAndAmb();
                         break;
                 }
             }
@@ -329,7 +368,7 @@ namespace IronbarkCoop
             if (Lead)
             {
                 if (method == "ComeInside") Send("inside");
-                else if (method == "ReachedX") Send("at-x");
+                else if (method == "ReachedX") { Send("at-x"); Plugin.Log("CULTIST8_AT_X_SENT"); }
                 return true;
             }
             if (!Copy || !RouteCommands.Contains(method)) return true;
@@ -570,7 +609,8 @@ namespace IronbarkCoop
             return on && !gone && !chaseStarted && c.gameObject.activeInHierarchy && (c.isAtX || c.isGoingToX) && !c.isChase;
         }
 
-        bool ReadyHere(WatchTowerManager tower) => SharedChase.Ghost || tower.state == WatchTowerManager.State.OutsideUpstairs;
+        // Ready to run: up and about (not in or under the bed, not shut in the porta-potty).
+        bool ReadyHere(WatchTowerManager tower) => SharedChase.Ghost || (!Hiding(tower) && tower.state != WatchTowerManager.State.InBed && Gm.playerFP && Gm.playerFP.activeInHierarchy);
 
         void Gate(WatchTowerManager tower)
         {
@@ -578,9 +618,10 @@ namespace IronbarkCoop
             bool ready = ReadyHere(tower);
             if (ready != sentReady || Time.unscaledTime >= nextReady) { sentReady = ready; nextReady = Time.unscaledTime + 1f; plugin.Send(new Packet { kind = "cultist8", code = "ready", active = ready, scene = SceneManager.GetActiveScene().name }); }
             bool closed = phase && !(ready && (partnerReady || SharedChase.PartnerGhost));
-            if (!wall) wall = MakeWall();
+            // Built once he waits at X: the walkway area boxes it is made from are live by then.
+            if (!wall && phase) wall = MakeWall();
             if (wall && wall.activeSelf != closed) { wall.SetActive(closed); Plugin.Log(closed ? "CULTIST8_WALL_UP" : "CULTIST8_WALL_DOWN"); }
-            if (closed && ready && wall && Time.unscaledTime >= nextWallLine && Vector3.Distance(Gm.playerFP.transform.position, wall.transform.position) < 2.5f)
+            if (closed && ready && wall && Time.unscaledTime >= nextWallLine && NearWall())
             {
                 nextWallLine = Time.unscaledTime + 7f;
                 Gm.subtitle.ShowSubAndClose(string.Format(ConnectionPanel.L("Без {0} не побегу. Подожду, пока выйдет.", "Not without {0}. I'll wait until they're out."), PartnerName()), 4f);
@@ -589,13 +630,34 @@ namespace IronbarkCoop
 
         string PartnerName() => string.IsNullOrEmpty(plugin.PartnerName) ? ConnectionPanel.L("напарника", "my partner") : plugin.PartnerName;
 
-        // Across the stairs where they leave the balcony (the game's "Player upstairs" trigger box).
+        // Just outside the tower door, across the walkway both ways (north to the stairs, south round the tower): he
+        // waits in front of the stairs, so the wall is between the door and him (playtest). Built from the game's own
+        // area boxes on that walkway ("Trigger Cultist Area 4", one each side of the door).
         GameObject MakeWall()
         {
+            var parent = new GameObject("Coop wait walls (night 8)");
+            parent.SetActive(false);
+            var door = Tower.door ? Tower.door.transform.position : Vector3.zero;
+            var used = new List<Vector3>();
             foreach (var t in Object.FindObjectsOfType<OnTrigger>(true))
-                if (t.name == "Player upstairs" && t.TryGetComponent<Collider>(out var box))
-                    return SharedChase.MakeWall("Coop wait wall (night 8)", box.bounds.center + Vector3.up * 0.8f, new Vector3(box.bounds.size.x, 3.5f, box.bounds.size.z));
-            return null;
+            {
+                if (t.name != "Trigger Cultist Area 4" || !t.TryGetComponent<Collider>(out var box) || !box.enabled || !t.gameObject.activeInHierarchy || box.bounds.size.sqrMagnitude < 0.1f) continue;
+                var b = box.bounds;
+                if (used.Exists(u => Vector3.Distance(u, b.center) < 0.5f)) continue;
+                used.Add(b.center);
+                // The box's end nearer the door.
+                float z = Mathf.Abs(b.min.z - door.z) < Mathf.Abs(b.max.z - door.z) ? b.min.z + 0.1f : b.max.z - 0.1f;
+                var wall = SharedChase.MakeWall("Coop wait wall", new Vector3(b.center.x, b.min.y + 1.6f, z), new Vector3(b.size.x + 0.7f, 3.6f, 0.3f));
+                wall.SetActive(true);
+                wall.transform.SetParent(parent.transform, true);
+            }
+            return parent;
+        }
+
+        bool NearWall()
+        {
+            foreach (Transform w in wall.transform) if (Vector3.Distance(Gm.playerFP.transform.position, w.position) < 2.2f) return true;
+            return false;
         }
 
         // The game's Seq8TriggerChase (seen running out while he waits): only once both are ready; then both get it.
@@ -627,18 +689,53 @@ namespace IronbarkCoop
             Plugin.Log("CULTIST8_CHASE_HERE");
         }
 
-        // When he notices the cult watcher through the binoculars (the game's Seq8CultSeen): the partner's world gets the
-        // same moment (the music, the thoughts, the camera ready to mount).
-        internal void CultSeen() { if (plugin.Ready && Night8 && !Applying) Send("cult-seen"); }
+        // Whoever spots the camp through the binoculars first (the game's Seq8CultSeen) has the moment and takes the
+        // photo; the partner gets the music and the first thought, and is told that the partner takes the photo (the
+        // camera stays shut for them; before, Space was offered and did nothing). A later look by the partner does not
+        // start the moment again.
+        bool partnerSpotted;
+        internal bool LetCultSeen()
+        {
+            if (!plugin.Ready || !Night8 || Applying) return true;
+            if (partnerSpotted) { Plugin.Log("CULTIST8_CULT_ALREADY_SEEN"); return false; }
+            Send("cult-seen");
+            return true;
+        }
 
         void CultSeenHere(WatchTowerManager tower)
         {
+            partnerSpotted = true;
+            tower.canMount = false;
             if (tower.seq8CultSeen) return;
             tower.seq8CultSeen = true;
-            tower.StartCoroutine(tower.Seq8CultSeenSubs());
+            Gm.subtitle.ShowSubAndClose(F2FLocalizedText.GetLocalizedText("ep4_subs", "Seq8DidntKnow"), 5f);
             if (tower.cultNoticed) tower.cultNoticed.Play();
             if (tower.seq8WhistleAS) tower.StartCoroutine(WhistleLater(tower));
             Plugin.Log("CULTIST8_CULT_SEEN_FROM_PARTNER");
+        }
+
+        static string PartnerPhotoHint => ConnectionPanel.L("РЎРЅРёРјРѕРє Р»Р°РіРµСЂСЏ РґРѕР»Р¶РµРЅ СЃРґРµР»Р°С‚СЊ РІР°С€ РЅР°РїР°СЂРЅРёРє.", "Your partner is the one to photograph the camp.");
+
+        void PhotoHint(WatchTowerManager tower)
+        {
+            if (!partnerSpotted || !Gm.uIManager) return;
+            tower.canMount = false;
+            bool show = tower.inMountArea && !tower.mounted && !tower.seq8FlashWentOff && tower.state == WatchTowerManager.State.OutsideUpstairs;
+            var text = Gm.uIManager.controlsText;
+            if (show && text.text != PartnerPhotoHint) text.text = PartnerPhotoHint;
+            else if (!show && text.text == PartnerPhotoHint) text.text = "";
+        }
+
+        // ---- the heartbeat while he searches downstairs ----
+        // His own area triggers start and stop it (HeartBeatAndNoAmb / HeartBeatStopAndAmb); the copy crosses them at
+        // other moments, so the partner's heartbeat could start after the lead's had stopped and never end (playtest). The
+        // lead's world decides for both.
+        internal bool LetHeartbeat(bool on)
+        {
+            if (!plugin.Ready || !Night8 || Applying) return true;
+            if (!Lead) return false;
+            plugin.Send(new Packet { kind = "cultist8", code = "hb", active = on, scene = SceneManager.GetActiveScene().name });
+            return true;
         }
 
         static IEnumerator WhistleLater(WatchTowerManager tower) { yield return new WaitForSeconds(3f); if (tower && tower.seq8WhistleAS) tower.seq8WhistleAS.Play(); }
@@ -676,7 +773,24 @@ namespace IronbarkCoop
     [HarmonyPatch(typeof(WatchTowerManager), nameof(WatchTowerManager.Seq8CultSeen))]
     internal static class Cultist8SeenPatch
     {
-        static void Prefix() => Night8Sync.Instance?.CultSeen();
+        static bool Prefix(ref System.Collections.IEnumerator __result)
+        {
+            if (Night8Sync.Instance == null || Night8Sync.Instance.LetCultSeen()) return true;
+            __result = SupperSync.Nothing();
+            return false;
+        }
+    }
+
+    [HarmonyPatch(typeof(WatchTowerManager), nameof(WatchTowerManager.HeartBeatAndNoAmb))]
+    internal static class Cultist8HeartbeatOnPatch
+    {
+        static bool Prefix() => Night8Sync.Instance == null || Night8Sync.Instance.LetHeartbeat(true);
+    }
+
+    [HarmonyPatch(typeof(WatchTowerManager), nameof(WatchTowerManager.HeartBeatStopAndAmb))]
+    internal static class Cultist8HeartbeatOffPatch
+    {
+        static bool Prefix() => Night8Sync.Instance == null || Night8Sync.Instance.LetHeartbeat(false);
     }
 
     [HarmonyPatch(typeof(WatchTowerManager), nameof(WatchTowerManager.Seq8JumpscareInitialize))]

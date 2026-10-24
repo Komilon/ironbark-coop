@@ -12,7 +12,7 @@ namespace IronbarkCoop
     public sealed class Packet
     {
         public string kind, scene, code, build;
-        public const int Protocol = 13;
+        public const int Protocol = 14;
         public int version = Protocol;
         public Vector3 position;
         public Quaternion rotation;
@@ -103,7 +103,7 @@ namespace IronbarkCoop
         }
     }
 
-    [BepInPlugin("astra.ironbark.coop", "Ironbark Cooperative", "0.11.1")]
+    [BepInPlugin("astra.ironbark.coop", "Ironbark Cooperative", "0.11.2")]
     public sealed class Plugin : BaseUnityPlugin
     {
         internal static Plugin Instance;
