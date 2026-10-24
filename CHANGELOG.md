@@ -2,6 +2,18 @@
 
 Both players must use the same mod version. / У обоих игроков должна быть одна версия мода.
 
+## 0.12.2 — an installer with a window / установщик с окном
+
+Protocol 16: works with 0.12.0 and 0.12.1. / Протокол 16: совместима с 0.12.0 и 0.12.1.
+
+**English**
+- New: `IronbarkCoop-Setup-0.12.2.exe`, one file. It finds the game, installs or updates the mod (your settings are kept, the window says which version was replaced), shows the game build code with a Copy button, and removes the mod. Nothing else to install: it runs on the .NET Framework that comes with Windows.
+- The zip with `install.bat` stays for those who prefer it; its last line no longer mentions the removed F8 panel.
+
+**Русский**
+- Новое: `IronbarkCoop-Setup-0.12.2.exe`, один файл. Находит игру, устанавливает или обновляет мод (настройки сохраняются, в окне видно, какая версия заменена), показывает код версии игры с кнопкой «Скопировать» и удаляет мод. Ничего доустанавливать не нужно: работает на .NET Framework, который есть в Windows.
+- Архив с `install.bat` остаётся для тех, кому так удобнее; в его последней строке больше нет упоминания убранной панели F8.
+
 ## 0.12.1 — the menu follows the game's language, no overlapping lines / меню на языке игры, строки не наезжают
 
 Protocol 16: works with 0.12.0. / Протокол 16: совместима с 0.12.0.

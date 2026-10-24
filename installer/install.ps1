@@ -47,4 +47,4 @@ if ($hash -ne '3590DA9516B67E36E18112E725B165F316757F7D0F4140C4CDAA4E263B9E96B7'
     Write-Host 'Note: this game build differs from the tested one; it may work but is not verified.' -ForegroundColor DarkYellow
 }
 Write-Host ''
-Write-Host 'Запустите игру и нажмите F8 / Start the game and press F8.'
+Write-Host 'Запустите игру и откройте «Мультиплеер» / Start the game and open Multiplayer.'

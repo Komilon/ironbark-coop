@@ -41,12 +41,14 @@ You both play the whole episode together, from the drive to the trail's end. Eac
 
 ### Install
 
-1. Download `IronbarkCoop-<version>.zip` from [Releases](../../releases) and unpack it anywhere.
-2. Close the game and run `install.bat`. It finds the game folder by itself (Steam libraries) or asks for the path.
-3. Compare the "game build code" with your friend.
+1. Download **`IronbarkCoop-Setup-<version>.exe`** from [Releases](../../releases).
+2. Close the game and run it. It finds the game folder by itself (Steam libraries); otherwise press **Browse…**.
+3. Press **Install** (or **Update**: your settings are kept). The window shows the **game build code**: compare it with your friend, it must match.
 4. On first start the mod spends a few seconds reading the characters from your Scratch Creek and caches them in `BepInEx\cache`. Nothing is downloaded.
 
-Uninstall: `uninstall.bat` (it asks before removing BepInEx, which other mods may use).
+Windows may warn that the installer is from an unknown publisher (it is not code-signed): **More info → Run anyway**. Prefer not to run an exe? The `IronbarkCoop-<version>.zip` has the same files with `install.bat`.
+
+Uninstall: run the installer again and press **Remove the mod** (it asks before removing BepInEx, which other mods may use), or `uninstall.bat` from the zip.
 
 ### Playing together
 
@@ -148,7 +150,7 @@ dotnet build src -c Release -p:GameDir="<game folder>" -p:LoaderDir="<BepInEx fo
 powershell -File tools\make-release.ps1 -Version <x.y.z> -LoaderDir "<BepInEx folder>"
 ```
 
-The build references the game's own assemblies from your install; none of them are in this repository. `tools\make-release.ps1` refuses to package any game file, decompiled source, `.pdb`, image or cache. `src\Wording.json` holds the new wording for two (English and Russian lines that replace the game's ones while a partner is connected).
+The build references the game's own assemblies from your install; none of them are in this repository. `tools\make-release.ps1` refuses to package any game file, decompiled source, `.pdb`, image or cache. It also builds `IronbarkCoop-Setup-<version>.exe` from `installerSetup.cs` with the C# compiler that ships with Windows (`Setup.exe /install "<game folder>"` installs without the window). `src\Wording.json` holds the new wording for two (English and Russian lines that replace the game's ones while a partner is connected).
 
 ### Licence and credits
 
@@ -176,12 +178,14 @@ The build references the game's own assemblies from your install; none of them a
 
 ### Установка
 
-1. Скачайте `IronbarkCoop-<версия>.zip` в разделе [Releases](../../releases) и распакуйте куда угодно.
-2. Закройте игру и запустите `install.bat`. Он найдёт папку игры сам (библиотеки Steam) или спросит путь.
-3. Сравните с другом «код версии игры».
+1. Скачайте **`IronbarkCoop-Setup-<версия>.exe`** в разделе [Releases](../../releases).
+2. Закройте игру и запустите его. Он сам найдёт папку игры (библиотеки Steam), иначе нажмите **«Обзор…»**.
+3. Нажмите **«Установить»** (или **«Обновить»**: ваши настройки сохранятся). В окне появится **код версии игры**: сравните его с другом, он должен совпадать.
 4. При первом запуске мод за несколько секунд прочитает персонажей из вашей Scratch Creek и сохранит их в `BepInEx\cache`. Скачивать ничего не нужно.
 
-Удаление: `uninstall.bat` (BepInEx удаляется только с вашего согласия: им могут пользоваться другие моды).
+Windows может предупредить, что издатель неизвестен (у установщика нет цифровой подписи): **«Подробнее» → «Выполнить в любом случае»**. Не хотите запускать exe? В `IronbarkCoop-<версия>.zip` те же файлы и `install.bat`.
+
+Удаление: снова запустите установщик и нажмите **«Удалить мод»** (BepInEx удаляется только с вашего согласия: им могут пользоваться другие моды) или `uninstall.bat` из архива.
 
 ### Как играть вместе
 
