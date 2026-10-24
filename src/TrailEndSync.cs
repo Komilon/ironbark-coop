@@ -109,7 +109,8 @@ namespace IronbarkCoop
         void Send(string code, bool active = false) => plugin.Send(new Packet { kind = "trailend", code = code, active = active, scene = SceneManager.GetActiveScene().name });
 
         // ---- waiting for each other ----
-        bool InZone(Vector3 at) => haveTrigger && at.x >= trigger.min.x - 1f && at.x <= trigger.max.x + 12f && Mathf.Abs(at.z - trigger.center.z) <= trigger.extents.z + 4f;
+        // Right at the game's own trigger (a wider zone started him too early, before the place where he is seen).
+        bool InZone(Vector3 at) => haveTrigger && at.x >= trigger.min.x - 1f && at.x <= trigger.max.x + 3f && Mathf.Abs(at.z - trigger.center.z) <= trigger.extents.z + 4f;
 
         void Gate(TrailEndManager tm)
         {

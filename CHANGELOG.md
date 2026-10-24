@@ -2,6 +2,22 @@
 
 Both players must use the same mod version. / У обоих игроков должна быть одна версия мода.
 
+## 0.11.1 — night 8's photo for both, the trail's end chase in its place, restart shortcuts / снимок восьмой ночи для обоих, погоня у фургона на своём месте, кнопки перезапуска
+
+Protocol 13: both players need 0.11.1. / Протокол 13: обоим нужна 0.11.1.
+
+**English**
+- Night 8: once the partner has taken the photo, the camera is no longer usable, so the "take the photo" hint no longer stays up for this player (Space did nothing). Whoever was at the camera is brought back from it.
+- Night 8: the partner's photo comes with its moment (the gasp, the violin), and when the cultist comes, this player's view turns to him too, as the photographer's does.
+- The trail's end: the cultist comes where he does in the game (both at its own trigger), no longer a dozen metres before it.
+- Shortcuts for trying it again, for both at once: Ctrl+F10 goes to night 8 just before the binoculars, Ctrl+F11 to the trail's end before the cultist.
+
+**Русский**
+- Ночь 8: после снимка напарника камерой пользоваться уже нельзя, поэтому подсказка «сфотографировать» у второго больше не остаётся висеть (Пробел ничего не делал). Того, кто стоял у камеры, возвращает от неё.
+- Ночь 8: снимок напарника сопровождается тем же моментом (вздох, скрипка), а когда культист бежит к вышке, взгляд второго тоже поворачивается к нему, как у фотографа.
+- Конец тропы: культист появляется там же, где в игре (оба у её собственного триггера), а не за десяток метров до него.
+- Кнопки, чтобы пройти заново, срабатывают у обоих сразу: Ctrl+F10 — восьмая ночь перед биноклем, Ctrl+F11 — конец тропы перед культистом.
+
 ## 0.11.0 — chases for two as in Scratch Creek, reading together, voice in the credits / погони вдвоём как в Scratch Creek, чтение вместе, голос в титрах
 
 Protocol 12: both players need 0.11.0. / Протокол 12: обоим нужна 0.11.0.

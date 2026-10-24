@@ -12,7 +12,7 @@ namespace IronbarkCoop
     public sealed class Packet
     {
         public string kind, scene, code, build;
-        public const int Protocol = 12;
+        public const int Protocol = 13;
         public int version = Protocol;
         public Vector3 position;
         public Quaternion rotation;
@@ -103,7 +103,7 @@ namespace IronbarkCoop
         }
     }
 
-    [BepInPlugin("astra.ironbark.coop", "Ironbark Cooperative", "0.11.0")]
+    [BepInPlugin("astra.ironbark.coop", "Ironbark Cooperative", "0.11.1")]
     public sealed class Plugin : BaseUnityPlugin
     {
         internal static Plugin Instance;
@@ -429,6 +429,7 @@ namespace IronbarkCoop
             TrailEnd.Tick();
             SharedChase.Tick(this);
             ReadSync.Tick();
+            ScenarioSync.Tick(this);
             Sleep.Tick();
             AnchorSeatedPartner();
             if (authenticated && Time.unscaledTime >= voiceRetryAt)
@@ -521,6 +522,7 @@ namespace IronbarkCoop
             if (p.kind == "trailend") { TrailEnd.Receive(p); return; }
             if (p.kind == "chase") { SharedChase.Receive(p); return; }
             if (p.kind == "read") { ReadSync.Receive(p); return; }
+            if (p.kind == "scenario") { ScenarioSync.Receive(this, p); return; }
             if (p.kind == "react") { if (p.scene == SceneManager.GetActiveScene().name && avatar != null && avatar.Active) { avatar.React(); Logger.LogInfo("SCARE_REMOTE " + p.code); } return; }
             if (p.kind == "scene")
             {
@@ -739,6 +741,7 @@ namespace IronbarkCoop
             Night8.SceneLoaded();
             TrailEnd.SceneLoaded();
             ReadSync.SceneLoaded();
+            ScenarioSync.SceneLoaded(this);
             SupperSync.SceneLoaded();
             Sleep.SceneLoaded();
             hasLastFeet = false;
@@ -862,16 +865,8 @@ namespace IronbarkCoop
                     if (p.kind == "lab-microwave") SupperSync.LabIntoMicrowave();
                     if (p.kind == "lab-fridge") SupperSync.LabIntoFridge();
                     if (p.kind == "lab-clear-controls" && GameManager.instance && GameManager.instance.uIManager) GameManager.instance.uIManager.controlsText.text = "";
-                    if (p.kind == "lab-skip-card")
-                    {
-                        // A night's opening card, line by line the way a key press moves it on.
-                        var next = AccessTools.Method(typeof(IntroSubChainWatchtower), "NextText");
-                        int skipped = 0;
-                        for (int round = 0; round < 12; round++)
-                            foreach (var chain in FindObjectsOfType<IntroSubChainWatchtower>())
-                                if (Traverse.Create(chain).Field("textOpened").GetValue<bool>() && !Traverse.Create(chain).Field("nexted").GetValue<bool>()) { next.Invoke(chain, null); skipped++; }
-                        Logger.LogInfo("LAB_SKIP_CARD " + skipped);
-                    }
+                    if (p.kind == "lab-skip-card") Logger.LogInfo("LAB_SKIP_CARD " + ScenarioSync.SkipCard());
+                    if (p.kind == "lab-scenario") ScenarioSync.LabRequest(this, p.code);
                     if (p.kind == "lab-pee" && GameManager.instance.watchTowerManager) { var tw = GameManager.instance.watchTowerManager; tw.seqPeed = true; tw.seq7peeTrigger.StartPee(); Logger.LogInfo("LAB_PEE"); }
                     if (p.kind == "lab-bake" && GameManager.instance.watchTowerManager) GameManager.instance.watchTowerManager.casserole.FinishBaking();
                     if (p.kind == "lab-eat-dish" && GameManager.instance && GameManager.instance.watchTowerManager && GameManager.instance.watchTowerManager.casserole) { var dish = GameManager.instance.watchTowerManager.casserole; dish.isEating = false; dish.Eat(); Logger.LogInfo("LAB_EAT_DISH " + dish.finishedInt); }

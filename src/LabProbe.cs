@@ -30,6 +30,7 @@ namespace IronbarkCoop
                 else if (code == "ranger") Ranger(lines);
                 else if (code == "casserole") Casserole(lines);
                 else if (code == "triggers") Triggers(lines);
+                else if (code == "fields" && GameManager.instance && GameManager.instance.watchTowerManager) { var tw = GameManager.instance.watchTowerManager; foreach (var f in typeof(WatchTowerManager).GetFields(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic)) if (f.FieldType == typeof(bool) && (f.Name.StartsWith("seq8") || f.Name.Contains("ount"))) lines.Add(f.Name + "=" + f.GetValue(tw)); lines.Add("state=" + tw.state + " area=" + tw.area + " pictureMode=" + (tw.seq8PictureMode ? tw.seq8PictureMode.gameObject.activeInHierarchy + "/" + tw.seq8PictureMode.inPictureMode : "-")); }
                 else if (code.StartsWith("story:") && StorySync.Instance != null) lines.AddRange(StorySync.Instance.PoseKeysFor(code.Substring(6)));
                 else if (code.StartsWith("loc:")) { var parts = code.Split(':'); for (int i = 2; i < parts.Length; i++) lines.Add(parts[1] + "/" + parts[i] + " = " + F2FLocalizedText.GetLocalizedText(parts[1], parts[i])); }
             }

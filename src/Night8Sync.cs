@@ -61,7 +61,7 @@ namespace IronbarkCoop
 
         internal void Reset()
         {
-            on = false; localHunt = false; huntPartner = false; gone = false; fled = false; havePose = false; toAnim = int.MinValue; soundBits = 0;
+            on = false; flashedHere = false; localHunt = false; huntPartner = false; gone = false; fled = false; havePose = false; toAnim = int.MinValue; soundBits = 0;
             target = null; askAt = 0f; resetting = false; chaseStarted = false; partnerReady = false; sentReady = false;
             if (partnerMark) Object.Destroy(partnerMark.gameObject);
             partnerMark = null;
@@ -78,6 +78,7 @@ namespace IronbarkCoop
             var cultist = tower.cultistSeq8;
             // The partner took the photo: the camp scatters here too.
             if (tower.seq8FlashWentOff && !fled) CampFlees(tower);
+            if (tower.seq8FlashWentOff && Gm.uIManager && Gm.uIManager.controlsText.text == F2FLocalizedText.GetLocalizedText("ep4_controls", "TakePhoto")) Gm.uIManager.controlsText.text = "";
             Gate(tower);
             if (Lead)
             {
@@ -106,6 +107,16 @@ namespace IronbarkCoop
                 }
             if (tower.seq8TriggerMount) tower.seq8TriggerMount.SetActive(false);
             tower.canMount = false;
+            // The photo was taken by the partner: this player gets its moment too (the gasp, the violin), and the
+            // camera is no longer theirs to use (the hint to take the photo stayed up and Space did nothing).
+            if (!flashedHere)
+            {
+                tower.inMountArea = false;
+                if (tower.gasp) tower.gasp.Play();
+                if (tower.scaryViolinAS) { tower.scaryViolinAS.volume = 0.7f; tower.scaryViolinAS.Play(); }
+                if (tower.mounted && !Gm.uIManager.inTransition) { tower.mounted = false; Gm.uIManager.StartCoroutine(Gm.uIManager.FadeBackFromMount()); }
+                Plugin.Log("CULTIST8_PARTNER_TOOK_THE_PHOTO");
+            }
             Plugin.Log("CULTIST8_CAMP_FLED");
         }
 
@@ -121,10 +132,22 @@ namespace IronbarkCoop
             return true;
         }
 
+        internal bool flashedHere;
+
+        // The partner brought him: this player watches him come too (the game's own look at him, five seconds).
         void ComeWithoutLooking(WatchTowerManager tower)
         {
             if (on || gone) return;
             on = true;
+            if (tower.state != WatchTowerManager.State.UnderBed && tower.state != WatchTowerManager.State.InBed && Gm.playerFP && Gm.playerFP.activeInHierarchy)
+            {
+                if (tower.seq8TriggerLookAtCultist) tower.seq8TriggerLookAtCultist.SetActive(false);
+                Applying = true;
+                try { tower.Seq8CultistEnableAndLookAt(); }
+                finally { Applying = false; }
+                Plugin.Log("CULTIST8_ON_FROM_PARTNER looking");
+                return;
+            }
             if (tower.colliderDownstairs) tower.colliderDownstairs.SetActive(false);
             if (tower.cultNoticed) tower.cultNoticed.Stop();
             if (tower.scaryViolinAS) tower.scaryViolinAS.Stop();
@@ -636,6 +659,12 @@ namespace IronbarkCoop
             if (plugin.Ready) SendPose(c);
             Plugin.Log("CULTIST8_GONE");
         }
+    }
+
+    [HarmonyPatch(typeof(PictureMode), nameof(PictureMode.TakePictureSeq8))]
+    internal static class Cultist8PhotoPatch
+    {
+        static void Prefix() { if (Night8Sync.Instance != null) Night8Sync.Instance.flashedHere = true; }
     }
 
     [HarmonyPatch(typeof(WatchTowerManager), nameof(WatchTowerManager.Seq8TriggerChase))]
