@@ -2,6 +2,20 @@
 
 Both players must use the same mod version. / У обоих игроков должна быть одна версия мода.
 
+## 0.12.1 — the menu follows the game's language, no overlapping lines / меню на языке игры, строки не наезжают
+
+Protocol 16: works with 0.12.0. / Протокол 16: совместима с 0.12.0.
+
+**English**
+- The "Multiplayer" item and the lobby's buttons now follow the language picked in the game (they stayed in the language the game started with).
+- The lobby's lines no longer overlap: "Play with a Steam friend", Microphone, Role and Look each have their own row.
+- README: new screenshots and GIFs.
+
+**Русский**
+- Пункт «Мультиплеер» и кнопки лобби теперь меняют язык вместе с игрой (раньше оставались на языке, с которым игра запустилась).
+- Строки лобби больше не наезжают друг на друга: у «Играть с другом в Steam», «Микрофона», «Роли» и «Внешности» свои строки.
+- README: новые скриншоты и гифки.
+
 ## 0.12.0 — the story told by two, the microphone opens on speech, a clear voice in the credits / история на двоих, микрофон по голосу, чистый голос в титрах
 
 Protocol 16: both players need 0.12.0. / Протокол 16: обоим нужна 0.12.0.

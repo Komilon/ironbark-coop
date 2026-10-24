@@ -45,7 +45,7 @@ namespace IronbarkCoop
                 if (item) item.anchoredPosition -= new Vector2(0f, row);
             }
             var episodes = buttons.Find("episodes") as RectTransform;
-            var entry = Clone(itemTemplate, buttons, "Multiplayer", L("Мультиплеер", "Multiplayer"), Show);
+            var entry = Clone(itemTemplate, buttons, "Multiplayer", "Мультиплеер", "Multiplayer", Show);
             entry.anchoredPosition = new Vector2(episodes.anchoredPosition.x, episodes.anchoredPosition.y - row);
 
             // Panel: a copy of the save panel keeps its frame, title style and Back button (BackToMainMenu).
@@ -92,6 +92,15 @@ namespace IronbarkCoop
             menu.SavedPanelShow();
         }
 
+        // A fixed label in both languages: it follows the game's language when the player changes it in Options.
+        internal static RectTransform Clone(Transform template, Transform parent, string name, string russian, string english, Action onClick)
+        {
+            var copy = Clone(template, parent, name, L(russian, english), onClick);
+            var live = copy.gameObject.AddComponent<TwoLanguages>();
+            live.Russian = russian; live.English = english;
+            return copy;
+        }
+
         internal static RectTransform Clone(Transform template, Transform parent, string name, string text, Action onClick)
         {
             var copy = UnityEngine.Object.Instantiate(template.gameObject, parent);
@@ -132,6 +141,21 @@ namespace IronbarkCoop
         }
     }
 
+    internal sealed class TwoLanguages : MonoBehaviour
+    {
+        internal string Russian, English;
+        Text text;
+        int shown = -1;
+        void Update()
+        {
+            int now = ConnectionPanel.Russian ? 1 : 0;
+            if (now == shown) return;
+            shown = now;
+            if (!text) text = GetComponent<Text>();
+            if (text) text.text = now == 1 ? Russian : English;
+        }
+    }
+
     // Lobby contents, refreshed every frame from the plugin's connection state.
     internal sealed class MultiplayerPanel : MonoBehaviour
     {
@@ -158,29 +182,29 @@ namespace IronbarkCoop
             hostSlot.horizontalOverflow = partnerSlot.horizontalOverflow = HorizontalWrapMode.Overflow;
             status = Label("status", x, top - 76f, 11, FontStyle.Normal, 270f, 34f);
             float bx = big.GetComponent<RectTransform>().anchoredPosition.x, y = top - 122f;
-            hostButton = MultiplayerMenu.Clone(big, transform, "host", L("Создать игру", "Host game"), () => Plugin.Instance?.HostDirect());
+            hostButton = MultiplayerMenu.Clone(big, transform, "host", "Создать игру", "Host game", () => Plugin.Instance?.HostDirect());
             hostButton.anchoredPosition = new Vector2(bx, y); y -= 31f;
-            joinButton = MultiplayerMenu.Clone(big, transform, "join", L("Подключиться", "Join"), () => Plugin.Instance?.JoinDirect());
+            joinButton = MultiplayerMenu.Clone(big, transform, "join", "Подключиться", "Join", () => Plugin.Instance?.JoinDirect());
             joinButton.anchoredPosition = new Vector2(bx, y); y -= 28f;
             ipRow = IpField(x, y); y -= 59f;
-            steamButton = MultiplayerMenu.Clone(big, transform, "steam", L("Играть с другом в Steam", "Play with a Steam friend"), () => Plugin.Instance?.HostSteam());
-            steamButton.anchoredPosition = new Vector2(bx, y);
-            inviteButton = MultiplayerMenu.Clone(big, transform, "invite", L("Пригласить друга", "Invite friend"), () => Plugin.Instance?.InviteSteam());
-            inviteButton.anchoredPosition = new Vector2(bx, y); y -= 31f;
-            playButton = MultiplayerMenu.Clone(big, transform, "play", L("Выбрать главу", "Choose chapter"), MultiplayerMenu.OpenChapters);
+            steamButton = MultiplayerMenu.Clone(big, transform, "steam", "Играть с другом в Steam", "Play with a Steam friend", () => Plugin.Instance?.HostSteam());
+            steamButton.anchoredPosition = new Vector2(bx, top - 228f);
+            inviteButton = MultiplayerMenu.Clone(big, transform, "invite", "Пригласить друга", "Invite friend", () => Plugin.Instance?.InviteSteam());
+            inviteButton.anchoredPosition = new Vector2(bx, top - 228f);
+            playButton = MultiplayerMenu.Clone(big, transform, "play", "Выбрать главу", "Choose chapter", MultiplayerMenu.OpenChapters);
             // Connected rows reuse the top lines, which the idle buttons leave free.
             playButton.anchoredPosition = new Vector2(bx, top - 122f);
-            leaveButton = MultiplayerMenu.Clone(big, transform, "leave", L("Отключиться", "Disconnect"), () => Plugin.Instance?.Leave());
+            leaveButton = MultiplayerMenu.Clone(big, transform, "leave", "Отключиться", "Disconnect", () => Plugin.Instance?.Leave());
             leaveButton.anchoredPosition = new Vector2(bx, top - 153f);
             // Host: share a short code instead of an address.
-            copyButton = MultiplayerMenu.Clone(big, transform, "copy code", L("Скопировать код", "Copy code"), () =>
+            copyButton = MultiplayerMenu.Clone(big, transform, "copy code", "Скопировать код", "Copy code", () =>
             {
                 var code = Plugin.Instance ? Plugin.Instance.HostCode : null;
                 if (code != null) GUIUtility.systemCopyBuffer = code;
             });
             copyButton.anchoredPosition = new Vector2(bx, top - 122f);
             upnpButton = MultiplayerMenu.Clone(big, transform, "upnp", "", () => { if (Plugin.Instance) Plugin.Instance.UpnpEnabled = !Plugin.Instance.UpnpEnabled; });
-            upnpButton.anchoredPosition = new Vector2(bx, top - 207f);
+            upnpButton.anchoredPosition = new Vector2(bx, top - 204f);
             upnpLabel = upnpButton.GetComponent<Text>();
             upnpLabel.fontSize = 13;
             // Survivor choice, as on Scratch Creek's survivor select (Marcus / Tessa).
@@ -189,36 +213,36 @@ namespace IronbarkCoop
                 var p = Plugin.Instance;
                 if (p) p.SetCharacter(p.CharacterSetting == "auto" ? "marcus" : p.CharacterSetting == "marcus" ? "tessa" : "auto");
             });
-            characterButton.anchoredPosition = new Vector2(bx, top - 264f);
+            characterButton.anchoredPosition = new Vector2(bx, top - 272f);
             characterLabel = characterButton.GetComponent<Text>();
             characterLabel.fontSize = 13;
             // Look: who the partner sees you as, picked in a 3D view (Scratch Creek's survivors and Ironbark's people).
             lookButton = MultiplayerMenu.Clone(big, transform, "look", "", OpenPreview);
-            lookButton.anchoredPosition = new Vector2(bx, top - 283f);
+            lookButton.anchoredPosition = new Vector2(bx, top - 289f);
             lookLabel = lookButton.GetComponent<Text>();
             lookLabel.fontSize = 13;
             // The microphone: on speech (as in Scratch Creek), push-to-talk or off.
             micButton = MultiplayerMenu.Clone(big, transform, "microphone", "", () => Plugin.Instance?.NextMicrophone());
-            micButton.anchoredPosition = new Vector2(bx, top - 245f);
+            micButton.anchoredPosition = new Vector2(bx, top - 255f);
             micLabel = micButton.GetComponent<Text>();
             micLabel.fontSize = 13;
             float py = top - 122f;
-            prevButton = MultiplayerMenu.Clone(big, transform, "look prev", L("‹ Пред.", "‹ Prev"), () => Step(-1));
+            prevButton = MultiplayerMenu.Clone(big, transform, "look prev", "‹ Пред.", "‹ Prev", () => Step(-1));
             prevButton.anchoredPosition = new Vector2(bx, py); py -= 31f;
-            nextButton = MultiplayerMenu.Clone(big, transform, "look next", L("След. ›", "Next ›"), () => Step(1));
+            nextButton = MultiplayerMenu.Clone(big, transform, "look next", "След. ›", "Next ›", () => Step(1));
             nextButton.anchoredPosition = new Vector2(bx, py); py -= 31f;
             poseButton = MultiplayerMenu.Clone(big, transform, "look pose", "", () => { if (preview) preview.Current = (CharacterPreview.Pose)(((int)preview.Current + 1) % 6); });
             poseButton.anchoredPosition = new Vector2(bx, py); py -= 40f;
             poseLabel = poseButton.GetComponent<Text>();
             poseLabel.fontSize = 15;
-            chooseButton = MultiplayerMenu.Clone(big, transform, "look choose", L("Выбрать", "Choose"), () =>
+            chooseButton = MultiplayerMenu.Clone(big, transform, "look choose", "Выбрать", "Choose", () =>
             {
                 var looks = ScRuntime.Available();
                 if (looks.Count > 0) Plugin.Instance?.SetLook(looks[lookIndex % looks.Count].Id);
                 previewOpen = false;
             });
             chooseButton.anchoredPosition = new Vector2(bx, py); py -= 31f;
-            closeButton = MultiplayerMenu.Clone(big, transform, "look close", L("Отмена", "Cancel"), () => previewOpen = false);
+            closeButton = MultiplayerMenu.Clone(big, transform, "look close", "Отмена", "Cancel", () => previewOpen = false);
             closeButton.anchoredPosition = new Vector2(bx, py);
             lookName = Label("look name", x, top - 40f, 16, FontStyle.Bold, 150f, 44f);
             lookName.alignment = TextAnchor.UpperLeft;
@@ -263,6 +287,8 @@ namespace IronbarkCoop
             var hint = Instantiate(text.gameObject, row).GetComponent<Text>();
             hint.name = "Placeholder";
             hint.text = L("Код друга или его IP", "Friend's code or IP");
+            var hintLive = hint.gameObject.AddComponent<TwoLanguages>();
+            hintLive.Russian = "Код друга или его IP"; hintLive.English = "Friend's code or IP";
             hint.color = new Color(1f, 1f, 1f, 0.35f);
             ip = row.gameObject.AddComponent<InputField>();
             ip.textComponent = text;

@@ -22,8 +22,8 @@ You both play the whole episode together, from the drive to the trail's end. Eac
 | | |
 |---|---|
 | ![Lobby](docs/media/01-lobby.png) | ![The ride](docs/media/03-rv.gif) |
-| ![Radio talk for two](docs/media/04-tower-radio.png) | ![Supper on the bed](docs/media/06-supper.png) |
-| ![Look picker](docs/media/08-looks.png) | ![The story told by two](docs/media/05-wording.png) |
+| ![Radio talk for two](docs/media/04-tower-radio.png) | ![Your partner on the trail](docs/media/06-trail.png) |
+| ![Look picker](docs/media/08-looks.png) | |
 
 <details>
 <summary><b>⚠ Spoiler: the cultist / Спойлер: культист</b></summary>

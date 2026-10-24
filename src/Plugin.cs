@@ -103,7 +103,7 @@ namespace IronbarkCoop
         }
     }
 
-    [BepInPlugin("astra.ironbark.coop", "Ironbark Cooperative", "0.12.0")]
+    [BepInPlugin("astra.ironbark.coop", "Ironbark Cooperative", "0.12.1")]
     public sealed class Plugin : BaseUnityPlugin
     {
         internal static Plugin Instance;
@@ -882,6 +882,8 @@ namespace IronbarkCoop
                     if (p.kind == "voice-muffle") voice?.LabMuffle();
                     if (p.kind == "record") StartCoroutine(Record(p.code, p.arg, p.pitch));
                     if (p.kind == "locale") { var wanted = UnityEngine.Localization.Settings.LocalizationSettings.AvailableLocales.GetLocale(p.code); if (wanted) UnityEngine.Localization.Settings.LocalizationSettings.SelectedLocale = wanted; Logger.LogInfo("LAB_LOCALE " + p.code + " " + (bool)wanted); }
+                    if (p.kind == "show-path") Logger.LogInfo("LAB_SHOW_PATH " + LabShowcase.Path(p.position, p.remotePosition));
+                    if (p.kind == "show-run") { var n = System.Array.ConvertAll((p.code ?? "2,4.5,0.4").Split(','), s => float.Parse(s, System.Globalization.CultureInfo.InvariantCulture)); StartCoroutine(LabShowcase.Run(p.pitch, p.time, n[0], n[1], new Vector3(n[2], 0f, 0f))); }
                     if (p.kind == "lab-ghost") SharedChase.LabGhost(this, p.active);
                     if (p.kind == "lab-pee" && GameManager.instance.watchTowerManager) { var tw = GameManager.instance.watchTowerManager; tw.seqPeed = true; tw.seq7peeTrigger.StartPee(); Logger.LogInfo("LAB_PEE"); }
                     if (p.kind == "lab-bake" && GameManager.instance.watchTowerManager) GameManager.instance.watchTowerManager.casserole.FinishBaking();
