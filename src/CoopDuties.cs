@@ -38,8 +38,10 @@ namespace IronbarkCoop
         // first evening's chain of story tasks (a chore there undid them: the stove the story just lit, the blinds the
         // bed needs shut), night 2 is Tessa's while Marcus dreams, and the day after it (3) is daylight and the hike to the
         // campers (a cold stove or a stalled generator there made no sense). Night 4 has its own evening (supper, Marcus's
-        // errand, the stove burning and the boards as the day left them; playtest: the stove chore broke it).
-        static bool CalmNight(WatchTowerManager tower) => tower.seq == WatchTowerManager.Seq.Seq6;
+        // errand, the stove burning and the boards as the day left them; playtest: the stove chore broke it). Night 6 has
+        // its own stove after the second supper (playtest: the random chore put out the fire Marcus had just lit).
+        // No night is left: the chores live on for the lab and the stayer's list (TripSync).
+        static bool CalmNight(WatchTowerManager tower) => false;
 
         public void Tick()
         {

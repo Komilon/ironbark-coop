@@ -2,6 +2,34 @@
 
 Both players must use the same mod version. / У обоих игроков должна быть одна версия мода.
 
+## 0.10.0 — nights 6–8 for two: one cultist in night 8, the ranger, the leftovers, the morning at the binoculars / ночи 6–8 на двоих: один культист в восьмой ночи, рейнджер, остатки ужина, утро с биноклем
+
+Protocol 11: both players need 0.10.0. / Протокол 11: обоим нужна 0.10.0.
+
+**English**
+- Night 8 ("two weeks later"): running down the stairs no longer starts the night again for both. Night 7's way out on the stairs stayed armed in the world of the player who had not walked through it; it is switched off when night 8 begins, and a night that has already begun can no longer start again.
+- Night 8, one cultist for both (as in night 5). The photo with the flash is the team's: once either player takes it, the camp scatters in both worlds and both may hide under the bed. Whoever walks into the balcony trigger first brings the cultist and watches him come. He runs in Marcus's world and Tessa sees the very same: his run to the door, the knocks, the door breaking, the music of him coming in, his search of the room, the chase downstairs. When Tessa is seen running down, Marcus's cultist gives chase. His hunt works as in Scratch Creek: he sees both of you. When something gives one of you away, he goes for whichever of you is closer and not hiding (under the bed or in the porta-potty), and the one he noticed counts even when hiding. He keeps that target until he catches them, and the other player hears it. The hunt itself is personal: the hunted player gets it in their own world, and in the partner's world he runs at them. After a death he goes for the other player if they are out in the open. Once both have died, or the other one is hiding, he is gone for the night. The end of the night takes both along.
+- Night 8: Connor's call when you stand up from bed comes once (it came again to Tessa at the door). Under the bed Tessa lies further along than Marcus, and the partner hiding there is not shown.
+- Night 6 morning: Tessa wakes at the binoculars on the balcony and Marcus in bed (Space to get up), like the coffee morning the other way round.
+- Night 6, Billy the ranger: whoever opens the door talks to him; the partner sees him hand over the supplies box and walk down the stairs at the same moment (he used to stand on and vanish later). The supplies box is one shared thing.
+- Night 6 leftovers: both trays wait in the fridge, one on the other. The microwave takes one tray at a time, and a tray warmed in it is warm for both. Each eats their own, and the partner sees what is left. Trays put back in the fridge after night 4's supper stand on each other instead of sinking into each other.
+- Night 6, the stove after supper: Marcus fetches the firewood (the stranger by the woodpile is his); Tessa waits upstairs until the stove is lit. The mod's random chores are off for good (one put out the fire Marcus had just lit).
+- Eating in bed: the partner sits on the edge of the bed with the hips on the mattress and the legs down, instead of sinking into it. The partner's chewing is heard only near their tray, not as a 2D sound.
+- Day 3, staying in the tower: the stove comes first, then the boards; the generator stalls a little after the stove is lit. The one who napped no longer reads the camper's "as I walked back to my tower in the dark": they get a line of their own.
+- A game bug: the tower photos shown at the campfire failed to load in a window smaller than 1920x1080, which left the campfire's way out switched on. They load at any size now.
+
+**Русский**
+- Ночь 8 («2 недели спустя»): пробежка вниз по лестнице больше не запускает ночь заново для обоих. Выход из седьмой ночи на лестнице оставался включённым в мире того, кто через него не прошёл. Теперь он выключается в начале восьмой ночи, а уже начавшаяся ночь больше не может начаться снова.
+- Ночь 8, один культист на двоих (как в пятой). Снимок со вспышкой общий: как только любой из вас сфотографирует, лагерь разбегается в обоих мирах, и оба могут прятаться под кроватью. Кто первым зайдёт в триггер на балконе, тот приводит культиста и видит, как он идёт. Культист бежит в мире Маркуса, а Тесса видит ровно то же: бег к двери, стуки, выбитую дверь, музыку, когда он входит, обыск комнаты, погоню вниз. Если Тессу заметят, когда она бежит вниз, культист Маркуса бросается в погоню. Погоня как в Scratch Creek: он видит вас обоих. Когда кто-то себя выдал, он идёт за тем, кто ближе и не спрятан (под кроватью или в туалете); того, кого он заметил, это касается даже в укрытии. Цель он не меняет, пока не поймает, а второй игрок это слышит. Сама погоня у каждого своя: преследуемый получает её в своём мире, а в мире напарника культист бежит к нему. После гибели он идёт за вторым игроком, если тот на виду. Когда погибли оба или второй спрятался, он уходит на всю ночь. Конец ночи забирает обоих.
+- Ночь 8: звонок Коннора, когда встаёшь с кровати, приходит один раз (у Тессы он начинался ещё раз у двери). Под кроватью Тесса лежит дальше, чем Маркус, а прячущегося там напарника не видно.
+- Утро шестой ночи: Тесса просыпается у бинокля на балконе, Маркус в кровати (Пробел — встать), как утро с кофе, только наоборот.
+- Ночь 6, рейнджер Билли: с ним говорит тот, кто открыл дверь. Напарник видит, как он в тот же момент отдаёт коробку и уходит вниз (раньше он стоял дальше и потом пропадал). Коробка с припасами — один общий предмет.
+- Ночь 6, остатки ужина: оба подноса ждут в холодильнике, один на другом. В микроволновку помещается один поднос за раз, и разогретый поднос тёплый у обоих. Каждый ест свой, напарник видит, сколько осталось. Подносы, поставленные в холодильник после ужина в четвёртую ночь, тоже стоят друг на друге, а не проваливаются друг в друга.
+- Ночь 6, печь после ужина: за дровами идёт Маркус (незнакомец у поленницы — его), Тесса ждёт наверху, пока печь не разожгут. Случайные поручения мода выключены совсем (одно из них тушило только что разожжённую печь).
+- Еда в кровати: напарник сидит на краю кровати, бёдрами на матрасе и ногами вниз, а не проваливается в неё. Жевание напарника слышно только рядом с его подносом, а не как 2D-звук.
+- День 3, кто остался на вышке: сначала печь, потом ставни; генератор глохнет чуть позже, после того как печь разожгли. Тот, кто дремал, больше не читает фразу похода «пока я возвращался на свою башню в темноте», у него своя строка.
+- Ошибка самой игры: фото вышки у костра не загружались, если окно меньше 1920×1080, и из-за этого оставался включённым выход из сцены костра. Теперь они загружаются при любом размере окна.
+
 ## 0.9.0 — night 5 with one cultist for both, one answer at the trail head / пятая ночь с одним культистом на двоих, один ответ у тропы
 
 Protocol 10: both players need 0.9.0. / Протокол 10: обоим нужна 0.9.0.

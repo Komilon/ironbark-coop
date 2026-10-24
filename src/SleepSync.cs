@@ -101,6 +101,7 @@ namespace IronbarkCoop
 
         // The morning after night 2: Marcus wakes up on the balcony with his coffee (the game's morning), Tessa wakes
         // up still in bed and gets up when she likes (Space), into the tower. Her own coffee scene does not run.
+        // The morning of night 6 the other way round: Tessa at the binoculars, Marcus in bed (Night6Sync).
         public bool MorningInBed { get; private set; }
 
         internal void WakeInBed()
@@ -117,6 +118,20 @@ namespace IronbarkCoop
                 pickup.inHand = false; pickup.inHandMug = false; pickup.currentItem = null; pickup.mug = null;
             }
             if (tower.pictureMode) tower.pictureMode.gameObject.SetActive(false);
+            // The morning of night 6 starts at the binoculars on the balcony (in hand, as the game's own get-off from them
+            // gives them): Tessa's.
+            if (tower.seq == WatchTowerManager.Seq.Seq6)
+            {
+                if (tower.playerBino) tower.playerBino.SetActive(false);
+                if (pickup && pickup.inHandBinoculars && (pickup.binocularsModel == tower.seq6Binoculars || pickup.binocularsModel == tower.binoculars))
+                {
+                    pickup.inHand = false; pickup.inHandBinoculars = false; pickup.binocularsModel = null;
+                    if (pickup.currentItem == tower.binoculars) pickup.currentItem = null;
+                }
+                // Space would otherwise run the game's get-off from the binoculars later (binoculars in hand, anywhere).
+                tower.seq6CanGetOff = false;
+                tower.state = WatchTowerManager.State.InBed;
+            }
             gm.playerFP.SetActive(false);
             tower.playerInBed.SetActive(true);
             tower.playerInBed.transform.localEulerAngles = new Vector3(0f, 30f, 0f);

@@ -17,10 +17,10 @@ namespace IronbarkCoop
     {
         // Player-local state and scare machinery never leaves the instance that produced it.
         static readonly Regex PersonalField = new Regex(
-            @"^(state|isPlayerInside|wasOutside|insideShack|pointingAtBed|inPee\w*|peed|seqPeed|seqCanPee|seq7Peed|seq7CanPee|blink\d+once|sips|clicks|seq3Next\w+|seq\dCanGetOff|seq5CanGetOutOfBed|seq5HarpPlayed|seq5AmbStopped|seq5LowDeepPlayed|mounted|canMount|inMountArea|isStairsFootstepsPlaying|seq8ShiftSubOn|seq8SeenUnderBed|seq6PlayerInConvoTrigger|seq6TalkingTo\w+" +
+            @"^(state|area|isPlayerInside|wasOutside|insideShack|pointingAtBed|inPee\w*|peed|seqPeed|seqCanPee|seq7Peed|seq7CanPee|blink\d+once|sips|clicks|seq3Next\w+|seq\dCanGetOff|seq5CanGetOutOfBed|seq5HarpPlayed|seq5AmbStopped|seq5LowDeepPlayed|mounted|canMount|inMountArea|isStairsFootstepsPlaying|seq8ShiftSubOn|seq8SeenUnderBed|seq6PlayerInConvoTrigger|seq6TalkingTo\w+" +
             // Where each player is and what they sit on: the diner door, booths, the washroom, conversations, the RV.
             @"|dinerState|playerLockedToSeat|playerSittingFirstTime|bagInhand|inConversation|isPlayerInsideTheRV|playerCaught)$" +
-            @"|(?i)jump|haunt|farscare|closejump|chas|lookatcultist|cultist(walking|waiting|onscreen)|onscreen|cultseen|flashwentoff|skullseen",
+            @"|(?i)jump|haunt|farscare|closejump|chas|lookatcultist|cultist(walking|waiting|onscreen)|onscreen|cultseen|skullseen",
             RegexOptions.Compiled);
         // Night 5's cultist is one for both (Night5Sync): where he is in his round is shared, not each world's own.
         static readonly HashSet<string> SharedCultist = new HashSet<string> { "seq5CultistWalking", "seq5CultistWaiting" };
@@ -379,6 +379,7 @@ namespace IronbarkCoop
         internal bool BeforeTransition(string name, int argument)
         {
             if (!Transitions.Contains(name)) return true;
+            if (AlreadyThere(name, argument)) { Plugin.Log("TRANSITION_STALE " + name + ":" + argument); return false; }
             // Marcus's night 4 errand comes before his sleep.
             if (name == "FadeToSleep" && !ApplyingRemote && NightErrand.Instance != null && !NightErrand.Instance.AllowsSleep(argument)) return false;
             string id = name + ":" + argument;
@@ -393,10 +394,24 @@ namespace IronbarkCoop
             return true;
         }
 
+        // A night's start that is already behind us: the end-of-night-7 trigger on the stairs stayed armed in the world
+        // of the player who had not walked through it, and in night 8 running down the stairs started night 8 again for
+        // both (playtest). The story only goes forward.
+        static bool AlreadyThere(string name, int argument)
+        {
+            var tower = GameManager.instance ? GameManager.instance.watchTowerManager : null;
+            if (!tower) return false;
+            int now = (int)tower.seq - (int)WatchTowerManager.Seq.Seq1 + 1;
+            if (name == "FadeToSleep") return now >= argument;
+            if (name == "FadeOutSeq7") return now >= 8;
+            return false;
+        }
+
         public void ReceiveTransition(Packet packet)
         {
             var ui = GameManager.instance ? GameManager.instance.uIManager : null;
             if (!ui || packet.scene != SceneManager.GetActiveScene().name || !Transitions.Contains(packet.code)) return;
+            if (AlreadyThere(packet.code, packet.arg)) { Plugin.Log("TRANSITION_REMOTE_STALE " + packet.code + ":" + packet.arg); return; }
             var method = AccessTools.Method(typeof(UIManager), packet.code);
             if (method == null) return;
             ApplyingRemote = true;

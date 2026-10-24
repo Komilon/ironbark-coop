@@ -29,6 +29,7 @@ namespace IronbarkCoop
                 else if (code == "intro") Intro(lines);
                 else if (code == "ranger") Ranger(lines);
                 else if (code == "casserole") Casserole(lines);
+                else if (code == "triggers") Triggers(lines);
                 else if (code.StartsWith("story:") && StorySync.Instance != null) lines.AddRange(StorySync.Instance.PoseKeysFor(code.Substring(6)));
                 else if (code.StartsWith("loc:")) { var parts = code.Split(':'); for (int i = 2; i < parts.Length; i++) lines.Add(parts[1] + "/" + parts[i] + " = " + F2FLocalizedText.GetLocalizedText(parts[1], parts[i])); }
             }
@@ -76,6 +77,30 @@ namespace IronbarkCoop
                     + (light ? " light=" + light.type + "/" + light.intensity.ToString("F1") + "/" + light.range.ToString("F1") : ""));
                 if (++n > 200) break;
             }
+        }
+
+        // Every scene trigger and what its events call (the story's wiring that lives in the scene, not in code).
+        static void Triggers(List<string> lines)
+        {
+            string Events(UnityEngine.Events.UnityEventBase e)
+            {
+                var list = new List<string>();
+                for (int i = 0; i < e.GetPersistentEventCount(); i++)
+                {
+                    var target = e.GetPersistentTarget(i);
+                    list.Add((target is Component c ? c.GetType().Name + "@" + c.name : target ? target.name : "-") + "." + e.GetPersistentMethodName(i));
+                }
+                return string.Join(" ", list);
+            }
+            foreach (var t in Resources.FindObjectsOfTypeAll<OnTrigger>())
+            {
+                if (!t.gameObject.scene.IsValid()) continue;
+                var box = t.GetComponent<Collider>();
+                lines.Add(ItemSync.PathOf(t.transform) + " at=" + V(box ? box.bounds.center : t.transform.position) + (box ? " size=" + V(box.bounds.size) : "") + " active=" + t.gameObject.activeInHierarchy + " once=" + t.onlyOnce
+                    + " enter=" + (t.enterGameObject ? t.enterGameObject.name : "-") + " | in: " + Events(t.triggerEvent) + " | out: " + Events(t.triggerEventExit) + " | stay: " + Events(t.triggerEventStay));
+            }
+            foreach (var t in Resources.FindObjectsOfTypeAll<SubTrigger>())
+                if (t.gameObject.scene.IsValid()) lines.Add("SUB " + ItemSync.PathOf(t.transform) + " at=" + V(t.transform.position) + " active=" + t.gameObject.activeInHierarchy);
         }
 
         static void Clips(List<string> lines, string text)
@@ -148,6 +173,20 @@ namespace IronbarkCoop
             if (rig) { var cam = rig.GetComponentInChildren<Camera>(true); lines.Add("eatingRig " + ItemSync.PathOf(rig.transform) + " at=" + V(rig.transform.position) + " yaw=" + rig.transform.eulerAngles.y.ToString("F0") + " active=" + rig.activeInHierarchy + " cam=" + (cam ? V(cam.transform.position) + " camYaw=" + cam.transform.eulerAngles.y.ToString("F0") : "-")); }
             if (tower.bed) lines.Add("bed at=" + V(tower.bed.transform.position) + " yaw=" + tower.bed.transform.eulerAngles.y.ToString("F0") + " bounds=" + (tower.bed.TryGetComponent<Collider>(out var bc) ? bc.bounds.ToString() : "-") + " bedCam=" + (tower.bedCam ? V(tower.bedCam.transform.position) : "-"));
             if (tower.insideStovePosition) lines.Add("oven at=" + V(tower.insideStovePosition.transform.position));
+            if (tower.casseroleParentInsideFridge) lines.Add("fridgeSpot at=" + V(tower.casseroleParentInsideFridge.position) + " rot=" + V(tower.casseroleParentInsideFridge.eulerAngles) + " children=" + tower.casseroleParentInsideFridge.childCount);
+            if (tower.casseroleColliderInsideFridge) lines.Add("fridgeCollider " + ItemSync.PathOf(tower.casseroleColliderInsideFridge.transform) + " bounds=" + tower.casseroleColliderInsideFridge.bounds + " enabled=" + tower.casseroleColliderInsideFridge.enabled + " trigger=" + tower.casseroleColliderInsideFridge.isTrigger);
+            if (tower.casseroleColliderInsideMicrowave) lines.Add("microwaveSpot " + ItemSync.PathOf(tower.casseroleColliderInsideMicrowave.transform) + " bounds=" + tower.casseroleColliderInsideMicrowave.bounds + " enabled=" + tower.casseroleColliderInsideMicrowave.enabled + " trigger=" + tower.casseroleColliderInsideMicrowave.isTrigger + " in=" + tower.seq6CasseroleInsideMicrowave + " on=" + tower.seq6MicrowaveOn);
+            foreach (var tray in Object.FindObjectsOfType<Casserole>(true))
+                foreach (var r in tray.GetComponentsInChildren<MeshRenderer>()) { lines.Add("  trayBounds " + tray.name + "/" + r.name + " " + r.bounds); break; }
+            foreach (var hit in Physics.RaycastAll(tower.casseroleParentInsideFridge.position + Vector3.up * 0.6f, Vector3.down, 1.2f, ~0, QueryTriggerInteraction.Ignore))
+                lines.Add("  fridge column hit " + hit.collider.name + " y=" + hit.point.y.ToString("F3"));
+            if (tower.playerUnderBed)
+            {
+                var cam = tower.playerUnderBed.GetComponentInChildren<Camera>(true);
+                lines.Add("underBed " + ItemSync.PathOf(tower.playerUnderBed.transform) + " at=" + V(tower.playerUnderBed.transform.position) + " rot=" + V(tower.playerUnderBed.transform.eulerAngles) + " active=" + tower.playerUnderBed.activeInHierarchy
+                    + " cam=" + (cam ? V(cam.transform.position) + " fwd=" + V(cam.transform.forward) : "-") + " jumpscareAt=" + (tower.underBedJumpscarePostion ? V(tower.underBedJumpscarePostion.position) : "-")
+                    + " viewPoint=" + (tower.underBedJumpscareViewPoint ? V(tower.underBedJumpscareViewPoint.transform.position) : "-"));
+            }
         }
     }
 }

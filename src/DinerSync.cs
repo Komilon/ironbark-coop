@@ -43,7 +43,7 @@ namespace IronbarkCoop
                 // The body faces the way the eating rig sits; looking around turns only the head.
                 packet.active = true;
                 packet.sit = true;
-                packet.seat = "cam";
+                packet.seat = "bed-eat";
                 packet.eye = eye.position;
                 packet.position = eye.position - Vector3.up * BoothEyeHeight;
                 packet.rotation = Quaternion.Euler(0f, eye.eulerAngles.y, 0f);
@@ -67,6 +67,8 @@ namespace IronbarkCoop
                 latchedYaw = float.NaN;
                 return;
             }
+            // Hiding under the bed (night 8): hidden from the partner too (a sitting body there stuck out of the bed).
+            if (tower && tower.playerUnderBed && tower.playerUnderBed.activeInHierarchy) { latchedYaw = float.NaN; return; }
             // Any other seat the game moves the camera to near the body (computer chair, washroom): sit there.
             // Seats the game moves you to from anywhere (the morning coffee chair on the balcony) count wherever you stood.
             // Taking the photo of the sunrise after the coffee is done from the same spot (its own camera rig).

@@ -172,6 +172,8 @@ namespace IronbarkCoop
         public float SpeedJitter => driver.SpeedJitter;
         public void SetSpeaking(bool speaking) => driver.Speaking = speaking;
         public bool Lying { get => driver.Lying; set => driver.Lying = value; }
+        public bool OnBedEdge { get => driver.OnBedEdge; set => driver.OnBedEdge = value; }
+        public float PerchHipsGap => driver.PerchHipsGap;
         public Quaternion Look => driver.Look;
         public void SetHeldItem(GameObject source) => driver.SetHeldItem(source);
         public void React() => driver.React();
@@ -288,6 +290,7 @@ namespace IronbarkCoop
             var delta = Vector3.ClampMagnitude(wanted - head.position, 1.2f);
             transform.position += delta;
             if (Lying) delta += RestOnMattress();
+            else if (OnBedEdge) delta += PerchOnBed(forward);
             headToSeatEye = Vector3.Distance(head.position, seatEye.Value);
             SeatOffset = delta;
         }
@@ -310,6 +313,40 @@ namespace IronbarkCoop
             return move;
         }
 
+
+        // Supper on the bed: the eating camera is low and well inside the bed, so a body hung from it sat in the
+        // mattress (playtest). The body goes forward until the knees are past the edge, then up until the hips rest on
+        // the mattress: sitting on the edge of the bed with the legs down.
+        internal bool OnBedEdge;
+        Transform knee;
+        public float PerchHipsGap { get; private set; } = -1f;
+        Vector3 PerchOnBed(Vector3 forward)
+        {
+            if (!hips || !animator) return Vector3.zero;
+            if (!knee) knee = animator.GetBoneTransform(HumanBodyBones.LeftLowerLeg);
+            float Top(Vector3 at)
+            {
+                float top = float.MinValue;
+                foreach (var hit in Physics.RaycastAll(new Vector3(at.x, hips.position.y + 0.6f, at.z), Vector3.down, 1.6f, ~0, QueryTriggerInteraction.Ignore))
+                    if (!hit.collider.transform.IsChildOf(transform.root) && !hit.collider.CompareTag("Casserole") && hit.point.y > top) top = hit.point.y;
+                return top;
+            }
+            float seat = Top(hips.position);
+            if (seat == float.MinValue) { PerchHipsGap = -1f; return Vector3.zero; }
+            var move = Vector3.zero;
+            if (knee)
+                for (float d = 0f; d <= 0.8f; d += 0.05f)
+                    if (Top(knee.position + forward * d) < seat - 0.2f) { move = forward * Mathf.Max(0f, d - 0.1f); break; }
+            transform.position += move;
+            float under = Top(hips.position);
+            if (under != float.MinValue)
+            {
+                var up = Vector3.up * Mathf.Clamp(under + 0.06f - hips.position.y, -0.2f, 0.6f);
+                transform.position += up; move += up;
+                PerchHipsGap = hips.position.y - under;
+            }
+            return move;
+        }
 
         internal void BindLie(bool female)
         {

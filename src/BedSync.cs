@@ -19,12 +19,13 @@ namespace IronbarkCoop
         public static bool InBed(WatchTowerManager tower) =>
             tower.state == WatchTowerManager.State.InBed || tower.state == WatchTowerManager.State.OnRadioBed;
 
-        public void SceneLoaded() { shifted = null; coffeeShifted = null; }
+        public void SceneLoaded() { shifted = null; coffeeShifted = null; underShifted = false; }
 
         public void Tick()
         {
             var tower = GameManager.instance ? GameManager.instance.watchTowerManager : null;
             Coffee(tower);
+            UnderBed(tower);
             Transform rig = null;
             if (tower && tower.bed && plugin.Ready && InBed(tower))
                 foreach (var go in new[] { tower.playerInBed, tower.playerInBedEating, tower.playerInBedSeq5 })
@@ -115,6 +116,29 @@ namespace IronbarkCoop
             coffeeOriginal = rig.position;
             coffeeShifted = rig;
             Plugin.Log("COFFEE_BESIDE no free spot");
+        }
+
+        // Hiding under the bed (night 8): the game puts everyone in one spot under the head end; Tessa lies further
+        // along, toward the foot (playtest: both saw the very same view). Where the cultist crouches to look at her and
+        // what her camera turns to when he finds her go along.
+        internal static float UnderBedAlong = 0.9f;
+        bool underShifted;
+        Vector3 underMove;
+        void UnderBed(WatchTowerManager tower)
+        {
+            bool want = tower && tower.playerUnderBed && tower.playerUnderBed.activeInHierarchy && tower.bed && tower.bedCam && plugin.Ready && plugin.FollowsStory;
+            if (want == underShifted) return;
+            if (want)
+            {
+                var along = tower.bed.transform.position - tower.bedCam.transform.position; along.y = 0f;
+                if (along.sqrMagnitude < 0.01f) return;
+                underMove = along.normalized * UnderBedAlong;
+            }
+            float sign = want ? 1f : -1f;
+            foreach (var t in new[] { tower ? tower.playerUnderBed ? tower.playerUnderBed.transform : null : null, tower ? tower.underBedJumpscarePostion : null, tower ? tower.underBedJumpscareViewPoint : null })
+                if (t) t.position += underMove * sign;
+            underShifted = want;
+            Plugin.Log(want ? "UNDER_BED_ALONG " + underMove.ToString("F2") : "UNDER_BED_BACK");
         }
 
         void Restore()

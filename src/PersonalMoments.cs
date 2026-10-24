@@ -59,6 +59,7 @@ namespace IronbarkCoop
             var tower = gm.watchTowerManager;
             if (tower) ResetTowerScare(tower);
             Night5Sync.Instance?.AfterRespawn();
+            Night8Sync.Instance?.AfterRespawn();
             gm.isDead = false;
             if (gm.phone) gm.phone.enabled = true;
             if (gm.cameraShake) gm.cameraShake.enabled = false;

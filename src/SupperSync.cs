@@ -19,22 +19,103 @@ namespace IronbarkCoop
         internal static bool PartnerAte;
         static Casserole first, second;
         public static string Debug => "kayla" + (KaylaStarted ? "1" : "0") + "/partnerAte" + (PartnerAte ? "1" : "0") + "/trays" + (second ? 2 : first ? 1 : 0)
-            + "/mine" + (Tower && Tower.casserole && Tower.casserole == second ? "2" : "1");
+            + "/mine" + (Tower && Tower.casserole && Tower.casserole == second ? "2" : "1")
+            + "/mw" + (Tower && Tower.casseroleColliderInsideMicrowave ? (Tower.casseroleColliderInsideMicrowave.enabled ? "open" : "shut") + (Tower.seq6CasseroleInsideMicrowave ? "In" : "") + (Tower.seq6MicrowaveOn ? "On" : "") : "-")
+            + "/stack" + (first && second && first.transform.parent == second.transform.parent && Tower && first.transform.parent == Tower.casseroleParentInsideFridge ? (second.transform.position.y - first.transform.position.y).ToString("F2", System.Globalization.CultureInfo.InvariantCulture) : "-");
 
-        public static void SceneLoaded() { KaylaStarted = false; PartnerAte = false; first = null; second = null; }
+        public static void SceneLoaded() { KaylaStarted = false; PartnerAte = false; first = null; second = null; warmSent.Clear(); }
 
         static WatchTowerManager Tower => GameManager.instance ? GameManager.instance.watchTowerManager : null;
-        internal const string SecondKey = "Casserole:coop-second-portion";
+        internal const string SecondKey = "Casserole:coop-second-portion", FirstKey = "Casserole:coop-first-portion";
 
         // Whichever tray is in this player's hand is the game's dish here.
         public static void Tick()
         {
             var tower = Tower;
             var pickup = GameManager.instance ? GameManager.instance.itemPickUp : null;
-            if (!tower || !pickup || !second || !pickup.inHandCasserole || !pickup.currentItem) return;
+            if (!tower || !pickup || !second) return;
+            Fridge(tower);
+            Microwave(tower);
+            // Not while the microwave runs here: the game warms whatever is "the dish" when its timer ends.
+            if (!pickup.inHandCasserole || !pickup.currentItem || tower.seq6MicrowaveOn) return;
             if (!pickup.currentItem.TryGetComponent<Casserole>(out var held) || held == tower.casserole) return;
             tower.casserole = held;
             Plugin.Log("SUPPER_MY_TRAY " + (held == second ? "second" : "first"));
+        }
+
+        // The game puts the dish back in the fridge at one spot: the second tray went into the first (playtest). It
+        // stands on top of the other one instead.
+        const float Stacked = 0.075f;
+        static void Fridge(WatchTowerManager tower)
+        {
+            var spot = tower.casseroleParentInsideFridge;
+            if (!spot || !first || first.transform.parent != spot || second.transform.parent != spot) return;
+            if ((first.transform.position - spot.position).sqrMagnitude < 1e-4f && (second.transform.position - (spot.position + Vector3.up * Stacked)).sqrMagnitude < 1e-4f) return;
+            // Always the second portion on top, whichever went in last: both worlds come to the same stack.
+            first.transform.position = spot.position; first.transform.rotation = spot.rotation;
+            second.transform.position = spot.position + Vector3.up * Stacked;
+            second.transform.rotation = spot.rotation;
+            Plugin.Log("SUPPER_FRIDGE_STACKED");
+        }
+
+        // Night 6: one tray in the microwave at a time. The game shuts its spot after a tray goes in and never opens it
+        // again (it knows one dish), and the partner's world does not see the tray go in at all: the spot is open here
+        // exactly while no tray is in it and it is not running.
+        static void Microwave(WatchTowerManager tower)
+        {
+            var spot = tower.casseroleColliderInsideMicrowave;
+            if (tower.seq != WatchTowerManager.Seq.Seq6 || !spot) return;
+            bool inside = (first && first.transform.parent == spot.transform && first.gameObject.activeInHierarchy) || (second && second.transform.parent == spot.transform && second.gameObject.activeInHierarchy);
+            bool busy = inside || tower.seq6MicrowaveOn;
+            if (tower.seq6CasseroleInsideMicrowave != inside && !tower.seq6MicrowaveOn) tower.seq6CasseroleInsideMicrowave = inside;
+            if (spot.enabled == busy) spot.enabled = !busy;
+            // Warmed up here: warm in the partner's world too (whoever eats it there, or takes it out).
+            foreach (var tray in new[] { first, second })
+            {
+                if (!tray || tray.isCold || tray.transform.parent != spot.transform || warmSent.Contains(tray)) continue;
+                warmSent.Add(tray);
+                var plugin = Plugin.Instance;
+                var key = plugin != null && plugin.Ready ? plugin.Items.KeyOf(tray.gameObject) : null;
+                if (key != null) plugin.Send(new Packet { kind = "supper", code = "warm", name = key, scene = SceneManager.GetActiveScene().name });
+                Plugin.Log("SUPPER_WARMED " + (tray == second ? "second" : "first"));
+            }
+        }
+
+        static readonly System.Collections.Generic.HashSet<Casserole> warmSent = new System.Collections.Generic.HashSet<Casserole>();
+
+        // Night 6's leftovers: the game takes its one dish out of the fridge cold and half eaten. Both trays are there,
+        // the second standing on the first (a night 6 started from the menu has no second tray yet: it is made here,
+        // in both worlds, as after baking); the game's dish is the first one in both worlds until someone takes one.
+        internal static void Leftovers()
+        {
+            var plugin = Plugin.Instance;
+            var tower = Tower;
+            if (plugin == null || !plugin.Ready || !tower || !tower.casserole || !tower.casseroleParentInsideFridge) return;
+            if (!first) first = tower.casserole == second ? null : tower.casserole;
+            if (!first) return;
+            if (!second)
+            {
+                var copy = Object.Instantiate(first.gameObject, first.transform.parent);
+                copy.name = "Coop casserole (second portion)";
+                second = copy.GetComponent<Casserole>();
+            }
+            plugin.Items.Rekey(first.gameObject, FirstKey);
+            plugin.Items.Rekey(second.gameObject, SecondKey);
+            var spot = tower.casseroleParentInsideFridge;
+            foreach (var tray in new[] { first, second })
+            {
+                tray.gameObject.SetActive(true);
+                tray.transform.SetParent(spot, false);
+                tray.transform.localPosition = Vector3.zero; tray.transform.localEulerAngles = Vector3.zero;
+                tray.HalfEaten();
+                tray.isEating = false;
+                tray.StopPS();
+                if (tray.pointLight) tray.pointLight.SetActive(false);
+                if (tray.TryGetComponent<Rigidbody>(out var body)) body.isKinematic = true;
+            }
+            second.transform.position = spot.position + Vector3.up * Stacked;
+            tower.casserole = first;
+            Plugin.Log("SUPPER_LEFTOVERS two trays in the fridge");
         }
 
         internal static void Receive(Packet packet)
@@ -52,6 +133,14 @@ namespace IronbarkCoop
                     PartnerAte = true;
                     Plugin.Log("SUPPER_PARTNER_ATE");
                     break;
+                case "warm":
+                    var warmed = Plugin.Instance != null ? Plugin.Instance.Items.Find(packet.name) : null;
+                    if (warmed && warmed.TryGetComponent<Casserole>(out var warm) && warm.isCold)
+                    {
+                        warm.isCold = false; warm.isPickable = true; warm.PlayPS(); warmSent.Add(warm);
+                        Plugin.Log("SUPPER_PARTNER_WARMED");
+                    }
+                    break;
                 case "bite":
                     // The partner's tray (by its shared key) shows what is left on it, with the sound of eating.
                     var plugin = Plugin.Instance;
@@ -66,8 +155,24 @@ namespace IronbarkCoop
             if (dish.finishedGameobjects == null || dish.finishedGameobjects.Length == 0) return;
             dish.finishedInt = eaten;
             for (int i = 0; i < dish.finishedGameobjects.Length; i++) if (dish.finishedGameobjects[i]) dish.finishedGameobjects[i].SetActive(i == eaten);
-            if (dish.eatingAS && dish.gameObject.activeInHierarchy) { dish.eatingAS.Play(); dish.StartCoroutine(PauseLater(dish.eatingAS, 5f)); }
+            // The tray's own eating sound is a 2D one (the eater's): the partner hears it from the tray, only nearby.
+            var sound = BiteSound(dish);
+            if (sound && dish.gameObject.activeInHierarchy) { sound.Play(); dish.StartCoroutine(PauseLater(sound, 5f)); }
             Plugin.Log("SUPPER_PARTNER_BITE " + eaten);
+        }
+
+        static AudioSource BiteSound(Casserole dish)
+        {
+            if (!dish.eatingAS || !dish.eatingAS.clip) return null;
+            var holder = dish.transform.Find("Coop bite sound");
+            if (holder) return holder.GetComponent<AudioSource>();
+            var go = new GameObject("Coop bite sound");
+            go.transform.SetParent(dish.transform, false);
+            var source = go.AddComponent<AudioSource>();
+            source.clip = dish.eatingAS.clip; source.volume = dish.eatingAS.volume; source.outputAudioMixerGroup = dish.eatingAS.outputAudioMixerGroup;
+            source.playOnAwake = false; source.loop = dish.eatingAS.loop;
+            source.spatialBlend = 1f; source.rolloffMode = AudioRolloffMode.Linear; source.minDistance = 1f; source.maxDistance = 7f;
+            return source;
         }
 
         static IEnumerator PauseLater(AudioSource source, float seconds) { yield return new WaitForSeconds(seconds); if (source) source.Pause(); }
@@ -119,6 +224,45 @@ namespace IronbarkCoop
             t.parent = null;
             t.position = tower.insideStovePosition.transform.position; t.rotation = tower.insideStovePosition.transform.rotation;
             Plugin.Log("LAB_DISH_IN_OVEN");
+        }
+
+        static readonly AccessTools.FieldRef<WatchTowerManager, bool> MicrowaveOpen = AccessTools.FieldRefAccess<WatchTowerManager, bool>("microwaveDoorOpen");
+
+        // Lab: the held tray into the open microwave, under the game's own conditions for that click (WatchTowerManager.Seq6Update).
+        internal static void LabIntoMicrowave()
+        {
+            var tower = Tower;
+            var pickup = GameManager.instance ? GameManager.instance.itemPickUp : null;
+            var spot = tower ? tower.casseroleColliderInsideMicrowave : null;
+            if (!spot || !pickup || !spot.enabled || !MicrowaveOpen(tower) || !pickup.inHandCasserole || !tower.casserole.isCold)
+            {
+                Plugin.Log("LAB_MICROWAVE refused spot=" + (spot && spot.enabled) + " door=" + (tower && MicrowaveOpen(tower)) + " held=" + (pickup && pickup.inHandCasserole));
+                return;
+            }
+            var casserole = tower.casserole;
+            casserole.isPickable = false;
+            casserole.transform.parent = spot.transform;
+            casserole.transform.localPosition = Vector3.zero;
+            casserole.transform.localEulerAngles = Vector3.zero;
+            tower.seq6CasseroleInsideMicrowave = true;
+            pickup.inHand = false; pickup.inHandCount--; pickup.inHandCasserole = false;
+            spot.enabled = false;
+            Plugin.Log("LAB_MICROWAVE in " + (casserole == second ? "second" : "first"));
+        }
+
+        // Lab: the held tray back into the fridge, as the game's click there does it (WatchTowerManager.Seq4Update).
+        internal static void LabIntoFridge()
+        {
+            var tower = Tower;
+            var pickup = GameManager.instance ? GameManager.instance.itemPickUp : null;
+            if (!tower || !pickup || !pickup.inHandCasserole || !tower.casseroleParentInsideFridge) { Plugin.Log("LAB_FRIDGE refused"); return; }
+            var casserole = tower.casserole;
+            casserole.transform.parent = tower.casseroleParentInsideFridge;
+            casserole.transform.localPosition = Vector3.zero;
+            casserole.transform.localEulerAngles = Vector3.zero;
+            pickup.inHand = false; pickup.inHandCount--; pickup.inHandCasserole = false;
+            if (tower.casseroleColliderInsideFridge) tower.casseroleColliderInsideFridge.enabled = false;
+            Plugin.Log("LAB_FRIDGE " + (casserole == second ? "second" : "first"));
         }
 
         internal static void LabTake(int which)
@@ -177,6 +321,13 @@ namespace IronbarkCoop
         static void Postfix(Casserole __instance) => SupperSync.AfterBaking(__instance);
     }
 
+    // Night 6 starts with the leftovers in the fridge: both trays.
+    [HarmonyPatch(typeof(WatchTowerManager), nameof(WatchTowerManager.Seq6Start))]
+    internal static class SupperLeftoversPatch
+    {
+        static void Postfix() => SupperSync.Leftovers();
+    }
+
     // A full portion eaten (night 4): the partner is told (Marcus's evening goes on once both have eaten).
     [HarmonyPatch(typeof(Casserole), nameof(Casserole.Eat))]
     internal static class SupperAtePatch
@@ -186,9 +337,11 @@ namespace IronbarkCoop
         {
             var plugin = Plugin.Instance;
             var tower = GameManager.instance ? GameManager.instance.watchTowerManager : null;
-            if (plugin == null || !plugin.Ready || !tower || tower.seq != WatchTowerManager.Seq.Seq4) return;
+            // Night 4's supper (four helpings) and night 6's leftovers (from four to eight).
+            if (plugin == null || !plugin.Ready || !tower || (tower.seq != WatchTowerManager.Seq.Seq4 && tower.seq != WatchTowerManager.Seq.Seq6)) return;
             if (__instance.finishedInt != __state) SupperSync.Bitten(__instance);
-            if (__state < 4 && __instance.finishedInt >= 4)
+            int full = tower.seq == WatchTowerManager.Seq.Seq4 ? 4 : 8;
+            if (__state < full && __instance.finishedInt >= full)
             {
                 plugin.Send(new Packet { kind = "supper", code = "ate", scene = SceneManager.GetActiveScene().name });
                 Plugin.Log("SUPPER_ATE");

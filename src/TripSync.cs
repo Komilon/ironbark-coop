@@ -38,6 +38,14 @@ namespace IronbarkCoop
         // instead of being put at the trail beside the partner (the game's own night 4 start).
         internal static bool NapEndsInBed;
 
+        // The napper's line on the evening card (the camper's own walk back in the dark is not theirs).
+        internal string NapIntroLine()
+        {
+            bool tessa = plugin.MyCharacter == "tessa";
+            return string.Format(ConnectionPanel.L("Я {0} почти до самого вечера. Когда я {1}, {2} уже {3} от костра.", "I slept almost until evening. When I woke up, {2} was already back from the campfire."),
+                tessa ? "проспала" : "проспал", tessa ? "проснулась" : "проснулся", PartnerName, PartnerIsTessa ? "вернулась" : "вернулся");
+        }
+
         internal void FollowingScene(string scene)
         {
             // Set on the first step (the evening's card); the tower that follows it keeps it until night 4 starts.
@@ -257,11 +265,11 @@ namespace IronbarkCoop
         }
 
         // ---- the one who stays: chores from the task list, then a nap until the partner is back ----
-        // Shut the window boards and stoke the stove (its fire is out, firewood from the pile below and a match); a
-        // little after the boards are shut the generator stalls (the same stall as the old random chore) and has to be
+        // Stoke the stove (its fire is out, firewood from the pile below and a match), then shut the window boards; a
+        // little after the stove is lit the generator stalls (the same stall as the old random chore) and has to be
         // restarted. Then the bed. A partner back from the campfire before that waits for the nap (CampfireEnd).
 
-        float choreAt, boardsAt = -1f;
+        float choreAt, stokedAt = -1f;
         int generator; // 0 running, 1 stalled, 2 restarted
         bool restarting, boardsTold;
         // Night 4 starts with the boards shut only when the one who stayed shut them (both worlds are told).
@@ -281,17 +289,18 @@ namespace IronbarkCoop
                 // The stove has burnt out since the morning.
                 CoopDuties.PutOutStove(tower);
                 CoopDuties.OpenWoodPile(tower);
-                chore = 1; boardsAt = -1f; generator = 0; restarting = false; boardsTold = false;
+                chore = 1; stokedAt = -1f; generator = 0; restarting = false; boardsTold = false;
                 Plugin.Log("TRIP_CHORES_START");
             }
             bool boards = tower.AllBlindsClosed(), stove = tower.fireLit;
             if (boards && !boardsTold)
             {
-                boardsTold = true; boardsAt = Time.unscaledTime; BoardsShut = true;
+                boardsTold = true; BoardsShut = true;
                 plugin.Send(new Packet { kind = "trip", code = "boards", scene = SceneManager.GetActiveScene().name });
                 Plugin.Log("TRIP_CHORE boards");
             }
-            if (generator == 0 && boardsAt > 0f && Time.unscaledTime - boardsAt > GeneratorAfter && !Gm.uIManager.inTransition && !Gm.isConversing)
+            if (stove && stokedAt < 0f) stokedAt = Time.unscaledTime;
+            if (generator == 0 && stokedAt > 0f && Time.unscaledTime - stokedAt > GeneratorAfter && !Gm.uIManager.inTransition && !Gm.isConversing)
             {
                 CoopDuties.StallGenerator(tower);
                 generator = 1;
@@ -305,8 +314,8 @@ namespace IronbarkCoop
             }
             bool all = boards && stove && generator == 2;
             var tasks = new System.Collections.Generic.List<(string, bool)> {
-                (ConnectionPanel.L("Закрыть ставни на окнах", "Close the window boards"), boards),
-                (ConnectionPanel.L("Подтопить печь", "Stoke the stove"), stove) };
+                (ConnectionPanel.L("Подтопить печь", "Stoke the stove"), stove),
+                (ConnectionPanel.L("Закрыть ставни на окнах", "Close the window boards"), boards) };
             if (generator > 0) tasks.Add((ConnectionPanel.L("Завести генератор у сарая", "Restart the generator by the shack"), generator == 2));
             if (all) tasks.Add((ConnectionPanel.L("Прилечь подремать на кровати", "Lie down on the bed for a nap"), false));
             TaskList.Show(tasks);
@@ -483,6 +492,30 @@ namespace IronbarkCoop
             if (TripSync.Instance == null || !TripSync.Instance.StayingBehind || __instance.seq != WatchTowerManager.Seq.Seq3) return true;
             __instance.state = WatchTowerManager.State.OutsideDownstairs;
             return false;
+        }
+    }
+}
+
+namespace IronbarkCoop
+{
+    // The evening card after the campfire ("as I walked back to my tower in the dark...") is the camper's: the one who
+    // napped in the tower (playtest report) reads one line of their own instead, and the card ends after it.
+    [HarmonyPatch(typeof(IntroSubChain), nameof(IntroSubChain.ShowText))]
+    internal static class NapIntroPatch
+    {
+        static readonly AccessTools.FieldRef<IntroSubChain, GameObject> NextText = AccessTools.FieldRefAccess<IntroSubChain, GameObject>("nextText");
+        static int replacedIn = -1;
+
+        static void Prefix(IntroSubChain __instance)
+        {
+            if (!TripSync.NapEndsInBed || SceneManager.GetActiveScene().name != "Seq 4 Intro" || TripSync.Instance == null) return;
+            int scene = SceneManager.GetActiveScene().handle;
+            if (replacedIn == scene) return;
+            replacedIn = scene;
+            var text = __instance.GetComponent<TMPro.TextMeshProUGUI>();
+            if (text) text.text = TripSync.Instance.NapIntroLine();
+            NextText(__instance) = null;
+            Plugin.Log("TRIP_NAP_INTRO " + (text ? text.text : "-"));
         }
     }
 }

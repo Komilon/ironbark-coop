@@ -12,7 +12,7 @@ namespace IronbarkCoop
     public sealed class Packet
     {
         public string kind, scene, code, build;
-        public const int Protocol = 10;
+        public const int Protocol = 11;
         public int version = Protocol;
         public Vector3 position;
         public Quaternion rotation;
@@ -103,7 +103,7 @@ namespace IronbarkCoop
         }
     }
 
-    [BepInPlugin("astra.ironbark.coop", "Ironbark Cooperative", "0.9.0")]
+    [BepInPlugin("astra.ironbark.coop", "Ironbark Cooperative", "0.10.0")]
     public sealed class Plugin : BaseUnityPlugin
     {
         internal static Plugin Instance;
@@ -123,6 +123,8 @@ namespace IronbarkCoop
         internal TripSync Trip;
         internal NightErrand Errand;
         internal Night5Sync Night5;
+        internal Night6Sync Night6;
+        internal Night8Sync Night8;
         internal SleepSync Sleep;
         bool partnerSit;
         int sceneEpoch;
@@ -212,6 +214,8 @@ namespace IronbarkCoop
             Trip = new TripSync(this);
             Errand = new NightErrand(this);
             Night5 = new Night5Sync(this);
+            Night6 = new Night6Sync(this);
+            Night8 = new Night8Sync(this);
             Sleep = new SleepSync(this);
             Items.RemoteHeldChanged += held => RefreshHeld();
             harmony = new Harmony("astra.ironbark.coop");
@@ -418,6 +422,8 @@ namespace IronbarkCoop
             SupperSync.Tick();
             Errand.Tick();
             Night5.Tick();
+            Night6.Tick();
+            Night8.Tick();
             Sleep.Tick();
             AnchorSeatedPartner();
             if (authenticated && Time.unscaledTime >= voiceRetryAt)
@@ -502,6 +508,8 @@ namespace IronbarkCoop
             if (p.kind == "supper") { SupperSync.Receive(p); return; }
             if (p.kind == "errand") { Errand.Receive(p); return; }
             if (p.kind == "cultist") { Night5.Receive(p); return; }
+            if (p.kind == "night6") { Night6.Receive(p); return; }
+            if (p.kind == "cultist8") { Night8.Receive(p); return; }
             if (p.kind == "react") { if (p.scene == SceneManager.GetActiveScene().name && avatar != null && avatar.Active) { avatar.React(); Logger.LogInfo("SCARE_REMOTE " + p.code); } return; }
             if (p.kind == "scene")
             {
@@ -544,11 +552,12 @@ namespace IronbarkCoop
             partnerPitch = Mathf.Clamp(p.pitch, -90f, 90f); partnerCrouch = p.crouch; partnerLight = p.light;
             Rides.ReceivePose(p);
             partnerSit = p.sit; partnerSeat = p.active ? p.seat : null; partnerBodyYaw = p.steer; partnerEye = p.eye;
-            partnerDreaming = p.code2 == "dream";
+            partnerDreaming = p.code2 == "dream"; partnerHiding = p.code2 == "hidden";
             if (partnerHand != p.hand || !heldShown) { partnerHand = p.hand; RefreshHeld(); }
             Diner.PartnerSeatChanged(partnerSeat);
             avatar.SetPose(targetPosition, targetRotation, partnerPitch, partnerCrouch, partnerLight, Finite(p.time) ? p.time : 0f, p.torch, p.sit);
             avatar.Lying = p.active && p.seat == "bed";
+            avatar.OnBedEdge = p.active && p.seat == "bed-eat";
         }
 
         static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value) && Mathf.Abs(value) < 1000000;
@@ -592,15 +601,21 @@ namespace IronbarkCoop
             // The desk chair is claimed from the click on, before the fade puts us on it, so two clicks at once are
             // compared by when they happened.
             if (TowerSync.LocalChair()) packet.seat = "tower-chair";
+            // Hiding in the porta-potty (night 8): the cultist does not see this player there.
+            var hideout = gm.watchTowerManager ? gm.watchTowerManager.portaPotty : null;
+            if (hideout && hideout.playerHiddenInside && string.IsNullOrEmpty(packet.code2)) packet.code2 = "hidden";
             return packet;
         }
 
         Vector3 lastFeet;
-        bool hasLastFeet, partnerDreaming;
+        bool hasLastFeet, partnerDreaming, partnerHiding;
+        // Out of the cultist's sight: under the bed (no body shown) or shut in the porta-potty.
+        internal bool PartnerHidden => !PartnerPresent || partnerHiding;
         internal bool PartnerDreaming => authenticated && partnerDreaming;
         internal float VoiceGain => voice != null ? voice.Gain : -1f;
         internal GameObject PartnerRoot => avatar != null ? avatar.Root : null;
         internal float PartnerHipsGap => avatar != null && avatar.Active ? avatar.LyingHipsGap : -1f;
+        internal float PartnerPerchGap => avatar != null && avatar.Active && avatar.OnBedEdge ? avatar.PerchHipsGap : -1f;
         float partnerBodyYaw;
         string partnerSeat, partnerHand;
         Vector3 partnerEye;
@@ -709,6 +724,8 @@ namespace IronbarkCoop
             Trip.SceneLoaded();
             Errand.SceneLoaded();
             Night5.SceneLoaded();
+            Night6.SceneLoaded();
+            Night8.SceneLoaded();
             SupperSync.SceneLoaded();
             Sleep.SceneLoaded();
             hasLastFeet = false;
@@ -829,6 +846,18 @@ namespace IronbarkCoop
                     if (p.kind == "errand-begin") Errand.LabBegin();
                     if (p.kind == "lab-take-tray") SupperSync.LabTake(p.arg);
                     if (p.kind == "lab-dish-oven") SupperSync.LabDishInOven();
+                    if (p.kind == "lab-microwave") SupperSync.LabIntoMicrowave();
+                    if (p.kind == "lab-fridge") SupperSync.LabIntoFridge();
+                    if (p.kind == "lab-skip-card")
+                    {
+                        // A night's opening card, line by line the way a key press moves it on.
+                        var next = AccessTools.Method(typeof(IntroSubChainWatchtower), "NextText");
+                        int skipped = 0;
+                        for (int round = 0; round < 12; round++)
+                            foreach (var chain in FindObjectsOfType<IntroSubChainWatchtower>())
+                                if (Traverse.Create(chain).Field("textOpened").GetValue<bool>() && !Traverse.Create(chain).Field("nexted").GetValue<bool>()) { next.Invoke(chain, null); skipped++; }
+                        Logger.LogInfo("LAB_SKIP_CARD " + skipped);
+                    }
                     if (p.kind == "lab-pee" && GameManager.instance.watchTowerManager) { var tw = GameManager.instance.watchTowerManager; tw.seqPeed = true; tw.seq7peeTrigger.StartPee(); Logger.LogInfo("LAB_PEE"); }
                     if (p.kind == "lab-bake" && GameManager.instance.watchTowerManager) GameManager.instance.watchTowerManager.casserole.FinishBaking();
                     if (p.kind == "lab-eat-dish" && GameManager.instance && GameManager.instance.watchTowerManager && GameManager.instance.watchTowerManager.casserole) { var dish = GameManager.instance.watchTowerManager.casserole; dish.isEating = false; dish.Eat(); Logger.LogInfo("LAB_EAT_DISH " + dish.finishedInt); }

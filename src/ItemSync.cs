@@ -39,6 +39,8 @@ namespace IronbarkCoop
             public GameObject Target;
             public bool HeldLocally, HeldRemotely;
             public string LastPose;
+            // Kept in the player's hands, hidden, until the story hands it over (the ranger's supplies box): held while shown.
+            public bool HandStandIn;
             // Throws and carries arrive ~7 times a second; the item glides between them.
             public Vector3 GlidePosition; public Quaternion GlideRotation; public bool Gliding;
             // In the RV: how long it has been a loose falling body, and whether the RV's own colliders ignore it.
@@ -164,7 +166,9 @@ namespace IronbarkCoop
                 // Hand-held stand-ins under the player prefab are the game's local visuals, not world items; the bag the
                 // scene starts in our hands is the team's bag, at the same path in both worlds.
                 bool inHands = IsInLocalHands(transform);
-                if (go.scene != scene || !IsShared(go.tag, scene.name) || (inHands && !(go.CompareTag("Bag") && go.activeInHierarchy))) continue;
+                // The ranger's supplies box waits in the hands, hidden, until he gives it (night 6): one box for both.
+                bool standIn = inHands && IsSuppliesBox(go);
+                if (go.scene != scene || !IsShared(go.tag, scene.name) || (inHands && !standIn && !(go.CompareTag("Bag") && go.activeInHierarchy))) continue;
                 // A baked casserole is a portion for each player (night 6's leftovers; night 4's two trays are made shared).
                 if (go.CompareTag("Casserole") && go.TryGetComponent<Casserole>(out var dish) && SupperSync.Baked(dish)) continue;
                 // Only the dish itself: the places a dish is put (on the lap in bed, in the microwave) carry its tag too.
@@ -172,9 +176,9 @@ namespace IronbarkCoop
                 // The registration path is the identity; both players load the same scene layout.
                 string key = go.tag + ":" + PathOf(transform);
                 if (byKey.ContainsKey(key)) continue;
-                var item = new Item { Key = key, Target = go, LastPose = Pose(go.transform) };
+                var item = new Item { Key = key, Target = go, LastPose = Pose(go.transform), HandStandIn = standIn };
                 items.Add(item); byKey[key] = item;
-                if (inHands) StartWithBag(item);
+                if (inHands && !standIn) StartWithBag(item);
             }
             Plugin.Log("ITEMS_REGISTERED " + registeredScene + " count=" + items.Count + " teamBag=" + teamBag);
         }
@@ -255,6 +259,12 @@ namespace IronbarkCoop
             return string.Format(CultureInfo.InvariantCulture, "{0:F3},{1:F3},{2:F3},{3:F4},{4:F4},{5:F4},{6:F4},{7}", p.x, p.y, p.z, r.x, r.y, r.z, r.w, transform.parent ? transform.parent.GetInstanceID() : 0);
         }
 
+        static bool IsSuppliesBox(GameObject go)
+        {
+            var tower = GameManager.instance ? GameManager.instance.watchTowerManager : null;
+            return tower && tower.suppliesBox == go;
+        }
+
         bool IsInLocalHands(Transform transform)
         {
             var gm = GameManager.instance;
@@ -291,7 +301,7 @@ namespace IronbarkCoop
                     if (item.LastPose != "gone") { item.LastPose = "gone"; plugin.Send(new Packet { kind = "item", code = "gone", name = item.Key, scene = registeredScene }); }
                     continue;
                 }
-                bool held = IsInLocalHands(item.Target.transform);
+                bool held = IsInLocalHands(item.Target.transform) && (!item.HandStandIn || item.Target.activeInHierarchy);
                 if (held != item.HeldLocally)
                 {
                     item.HeldLocally = held;
@@ -382,6 +392,17 @@ namespace IronbarkCoop
             var item = new Item { Key = key, Target = target, LastPose = Pose(target.transform) + (target.activeSelf ? ",1" : ",0") };
             items.Add(item); byKey[key] = item;
             Plugin.Log("ITEM_SHARED " + key);
+        }
+
+        // The same object under a key both worlds agree on, whatever it was registered as here (the scene's items are
+        // registered a moment after loading, and story code may have moved it by then).
+        internal void Rekey(GameObject target, string key)
+        {
+            if (!target) return;
+            var old = items.Find(i => i.Target == target);
+            if (old != null) { if (old.Key == key) return; items.Remove(old); byKey.Remove(old.Key); }
+            if (byKey.TryGetValue(key, out var other)) { items.Remove(other); byKey.Remove(key); }
+            AddShared(target, key);
         }
 
         internal string KeyOf(GameObject target) => items.Find(i => i.Target == target)?.Key;
