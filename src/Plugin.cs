@@ -12,7 +12,7 @@ namespace IronbarkCoop
     public sealed class Packet
     {
         public string kind, scene, code, build;
-        public const int Protocol = 11;
+        public const int Protocol = 12;
         public int version = Protocol;
         public Vector3 position;
         public Quaternion rotation;
@@ -103,7 +103,7 @@ namespace IronbarkCoop
         }
     }
 
-    [BepInPlugin("astra.ironbark.coop", "Ironbark Cooperative", "0.10.0")]
+    [BepInPlugin("astra.ironbark.coop", "Ironbark Cooperative", "0.11.0")]
     public sealed class Plugin : BaseUnityPlugin
     {
         internal static Plugin Instance;
@@ -125,6 +125,7 @@ namespace IronbarkCoop
         internal Night5Sync Night5;
         internal Night6Sync Night6;
         internal Night8Sync Night8;
+        internal TrailEndSync TrailEnd;
         internal SleepSync Sleep;
         bool partnerSit;
         int sceneEpoch;
@@ -216,6 +217,7 @@ namespace IronbarkCoop
             Night5 = new Night5Sync(this);
             Night6 = new Night6Sync(this);
             Night8 = new Night8Sync(this);
+            TrailEnd = new TrailEndSync(this);
             Sleep = new SleepSync(this);
             Items.RemoteHeldChanged += held => RefreshHeld();
             harmony = new Harmony("astra.ironbark.coop");
@@ -424,6 +426,9 @@ namespace IronbarkCoop
             Night5.Tick();
             Night6.Tick();
             Night8.Tick();
+            TrailEnd.Tick();
+            SharedChase.Tick(this);
+            ReadSync.Tick();
             Sleep.Tick();
             AnchorSeatedPartner();
             if (authenticated && Time.unscaledTime >= voiceRetryAt)
@@ -444,7 +449,10 @@ namespace IronbarkCoop
             else if (capture != null) { capture.Dispose(); capture = null; }
             voice?.SetDream(Dream.Dreaming, Dream.Dreaming ? Dream.HearingAt(targetPosition + Vector3.up * 1.6f) : 1f);
             voice?.SetSleepTalk(partnerDreaming && PartnerPresent);
-            voice?.Update(avatar != null ? avatar.HeadPosition : targetPosition + Vector3.up * 1.6f, authenticated && (PartnerPresent || Dream.Dreaming));
+            // The credits have no bodies: talk about the game there as on a call (playtest request).
+            bool credits = SceneManager.GetActiveScene().name == "Credits Scene";
+            voice?.SetFlat(credits);
+            voice?.Update(avatar != null ? avatar.HeadPosition : targetPosition + Vector3.up * 1.6f, authenticated && (PartnerPresent || Dream.Dreaming || credits));
             Bridge();
         }
 
@@ -485,7 +493,7 @@ namespace IronbarkCoop
             if (!authenticated) return;
             if (p.kind == "voice")
             {
-                if (p.scene != SceneManager.GetActiveScene().name || !(PartnerPresent || Dream.Dreaming)) return;
+                if (p.scene != SceneManager.GetActiveScene().name || !(PartnerPresent || Dream.Dreaming || p.scene == "Credits Scene")) return;
                 if (voice == null) voice = new VoicePlayback(voiceVolume);
                 voice.Receive(p.audio, p.arg);
                 return;
@@ -510,6 +518,9 @@ namespace IronbarkCoop
             if (p.kind == "cultist") { Night5.Receive(p); return; }
             if (p.kind == "night6") { Night6.Receive(p); return; }
             if (p.kind == "cultist8") { Night8.Receive(p); return; }
+            if (p.kind == "trailend") { TrailEnd.Receive(p); return; }
+            if (p.kind == "chase") { SharedChase.Receive(p); return; }
+            if (p.kind == "read") { ReadSync.Receive(p); return; }
             if (p.kind == "react") { if (p.scene == SceneManager.GetActiveScene().name && avatar != null && avatar.Active) { avatar.React(); Logger.LogInfo("SCARE_REMOTE " + p.code); } return; }
             if (p.kind == "scene")
             {
@@ -726,6 +737,8 @@ namespace IronbarkCoop
             Night5.SceneLoaded();
             Night6.SceneLoaded();
             Night8.SceneLoaded();
+            TrailEnd.SceneLoaded();
+            ReadSync.SceneLoaded();
             SupperSync.SceneLoaded();
             Sleep.SceneLoaded();
             hasLastFeet = false;
@@ -848,6 +861,7 @@ namespace IronbarkCoop
                     if (p.kind == "lab-dish-oven") SupperSync.LabDishInOven();
                     if (p.kind == "lab-microwave") SupperSync.LabIntoMicrowave();
                     if (p.kind == "lab-fridge") SupperSync.LabIntoFridge();
+                    if (p.kind == "lab-clear-controls" && GameManager.instance && GameManager.instance.uIManager) GameManager.instance.uIManager.controlsText.text = "";
                     if (p.kind == "lab-skip-card")
                     {
                         // A night's opening card, line by line the way a key press moves it on.

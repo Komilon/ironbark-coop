@@ -105,7 +105,7 @@ The code carries an address you can be reached at: external (if UPnP worked), el
 
 ### Status
 
-Tested automatically on two real copies of the game on one PC (27 test groups: network with packet loss and TCP fallback, menu and join code, avatars and animations, voice, shared story, personal scares and respawn, chores, every campaign scene, continue and reconnect, rides, diner, tower, nights 1–3 played end to end, the trail to the smoke together and alone, night 4's supper and Marcus's errand, night 5's cultist, night 6 (the morning, the ranger, the leftovers, the firewood), night 8's cultist, the look picker, playing without Scratch Creek). Human playtests on one PC so far.
+Tested automatically on two real copies of the game on one PC (29 test groups: network with packet loss and TCP fallback, menu and join code, avatars and animations, voice, shared story, personal scares and respawn, chores, every campaign scene, continue and reconnect, rides, diner, tower, nights 1–3 played end to end, the trail to the smoke together and alone, night 4's supper and Marcus's errand, night 5's cultist, night 6 (the morning, the ranger, the leftovers, the firewood), night 8's cultist and its chase, the trail's end chase, voice in the credits, the look picker, playing without Scratch Creek). Human playtests on one PC so far.
 
 **Not yet verified:** a session over the internet between two PCs, a live microphone, a full campaign played by people, UPnP on a real router, the Steam connection path.
 
@@ -237,7 +237,7 @@ The build references the game's own assemblies from your install; none of them a
 
 ### Что проверено и что нет
 
-Проверено автотестами на двух настоящих копиях игры на одном компьютере (27 групп тестов): сеть с потерями и переход на TCP, меню и код подключения, персонажи и анимации, голос, общий сюжет, личные скримеры и возрождение, обязанности, все сцены кампании, продолжение и переподключение, поездки, закусочная, вышка, ночи 1–3 целиком, поход к дыму вдвоём и одному, ужин и поход Маркуса в четвёртую ночь, культист пятой ночи, шестая ночь (утро, рейнджер, остатки ужина, дрова), культист восьмой ночи, выбор внешности, игра без Scratch Creek. Живые плейтесты пока — на одном компьютере.
+Проверено автотестами на двух настоящих копиях игры на одном компьютере (29 групп тестов): сеть с потерями и переход на TCP, меню и код подключения, персонажи и анимации, голос, общий сюжет, личные скримеры и возрождение, обязанности, все сцены кампании, продолжение и переподключение, поездки, закусочная, вышка, ночи 1–3 целиком, поход к дыму вдвоём и одному, ужин и поход Маркуса в четвёртую ночь, культист пятой ночи, шестая ночь (утро, рейнджер, остатки ужина, дрова), культист и погоня восьмой ночи, погоня в конце тропы, голос в титрах, выбор внешности, игра без Scratch Creek. Живые плейтесты пока — на одном компьютере.
 
 Ещё **не** проверено: игра через интернет между двумя ПК, живой микрофон, полное прохождение людьми, UPnP на реальном роутере, подключение через Steam.
 

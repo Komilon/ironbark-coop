@@ -19,6 +19,7 @@
     <Reference Include="Assembly-CSharp-firstpass"><HintPath>$(Managed)\Assembly-CSharp-firstpass.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="Newtonsoft.Json"><HintPath>$(Managed)\Newtonsoft.Json.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="Unity.TextMeshPro"><HintPath>$(Managed)\Unity.TextMeshPro.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="CameraFilterPackAssembly"><HintPath>$(Managed)\CameraFilterPackAssembly.dll</HintPath><Private>false</Private></Reference>
     <!-- The game ships its own Yarn.Unity.OptionView/OptionsListView/View; the package's types are reached through this alias. -->
     <Reference Include="YarnSpinner.Unity"><HintPath>$(Managed)\YarnSpinner.Unity.dll</HintPath><Private>false</Private><Aliases>YarnUnity</Aliases></Reference>
     <Reference Include="YarnSpinner"><HintPath>$(Managed)\YarnSpinner.dll</HintPath><Private>false</Private></Reference>

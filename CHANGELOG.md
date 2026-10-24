@@ -2,6 +2,30 @@
 
 Both players must use the same mod version. / У обоих игроков должна быть одна версия мода.
 
+## 0.11.0 — chases for two as in Scratch Creek, reading together, voice in the credits / погони вдвоём как в Scratch Creek, чтение вместе, голос в титрах
+
+Protocol 12: both players need 0.11.0. / Протокол 12: обоим нужна 0.11.0.
+
+**English**
+- Night 8, the cult through the binoculars: when one player spots it, the other gets the same moment (the music, the thoughts, the camera ready to take the photo).
+- Night 8, a death is the team's (as in Scratch Creek): the victim gets the game's jumpscare, the partner sees it happen (the view turns to the cultist, the screen breaks up, the controls are gone), then both start over in the tower room with the cultist waiting downstairs again. Before, the victim came back alone and the cultist was gone, so the way out was free.
+- Night 8, running away together: while the cultist waits downstairs, an invisible wall at the top of the stairs holds whoever is out on the balcony until the partner is out there too. The zone is the whole balcony, so nobody has to push against the wall. Only then can the chase start, and it starts for both (the music, the sprint, the view to him). Nobody is left under the bed while the other runs.
+- Both chases: the cultist goes for the closer player who is not hiding. The other player hears the hunt (quieter) and the stab.
+- The trail's end (the guard house, then the run to the RV), as in Scratch Creek: the cultist comes only once both players have reached the place. Whoever is first waits at an invisible wall, with the whole stretch before it as the zone. Then both see him and run. He is one for both and goes for the closer player. A death sends both back to the start of the trail's end. The night ends in the RV only with both inside and the door shut. The two players no longer start in the very same spot.
+- The text cards on black (the night openings, the scene intros, the ending): whoever finishes reading first waits on the last line under Scratch Creek's red "the other survivor is still reading." until the partner has finished too.
+- The credits: you can talk to each other there (heard as on a call).
+- For testing alone with two copies: Ctrl+F9 makes the cultist ignore this player (and counts them as ready at the walls).
+
+**Русский**
+- Ночь 8, культисты в бинокль: когда один игрок их заметил, у второго происходит то же самое (музыка, мысли, возможность сфотографировать).
+- Ночь 8, гибель общая (как в Scratch Creek): жертва получает игровой скример, а напарник видит это со стороны (взгляд поворачивается к культисту, экран искажается, управление отключается). После этого оба начинают заново в комнате вышки, а культист снова ждёт внизу. Раньше погибший возвращался один, культист исчезал, и путь был свободен.
+- Ночь 8, побег вдвоём: пока культист ждёт внизу, невидимая стена наверху лестницы держит того, кто вышел на балкон, пока не выйдет и второй. Зона — весь балкон, упираться в стену не нужно. Только тогда может начаться погоня, и она начинается у обоих (музыка, бег, взгляд на культиста). Никто не остаётся под кроватью, пока другой убегает.
+- В обеих погонях культист идёт за тем, кто ближе и не спрятан. Второй игрок слышит погоню (тише) и удар.
+- Конец тропы (будка охранника, потом бег к фургону), как в Scratch Creek: культист появляется только когда оба дошли до места. Кто пришёл первым, ждёт у невидимой стены, зона — весь участок перед ней. Потом оба видят культиста и бегут. Культист один на двоих и идёт за тем, кто ближе. После гибели оба возвращаются к началу этой сцены. Ночь заканчивается в фургоне, только когда внутри оба и дверь закрыта. Игроки больше не появляются в одной точке.
+- Карточки на чёрном фоне (начала ночей, вступления сцен, концовка): кто дочитал первым, ждёт на последней строке под красной надписью «другой выживший всё ещё читает.», пока не дочитает напарник.
+- Титры: в них можно разговаривать друг с другом (слышно как по телефону).
+- Для теста в одиночку на двух копиях: Ctrl+F9 — культист не замечает этого игрока (и у стен он считается готовым).
+
 ## 0.10.0 — nights 6–8 for two: one cultist in night 8, the ranger, the leftovers, the morning at the binoculars / ночи 6–8 на двоих: один культист в восьмой ночи, рейнджер, остатки ужина, утро с биноклем
 
 Protocol 11: both players need 0.10.0. / Протокол 11: обоим нужна 0.10.0.

@@ -87,7 +87,7 @@ namespace IronbarkCoop
         }
 
         // Undo what PerformJumpscareAtRun / Seq8PerformJumpscare* switched on for this player only.
-        static void ResetTowerScare(WatchTowerManager tower)
+        internal static void ResetTowerScare(WatchTowerManager tower)
         {
             foreach (var name in new[] { "anomaly", "blurFocus", "distortionDream", "realVHS", "filmGrain", "bloodPlus",
                 "anomalyUnderBed", "blurFocusUnderBed", "distortionDreamUnderBed", "realVHSUnderBed", "filmGrainUnderBed", "bloodPlusUnderBed" })
@@ -112,6 +112,9 @@ namespace IronbarkCoop
         {
             var plugin = Plugin.Instance;
             if (plugin == null || !plugin.Ready || PersonalMoments.Instance == null) return true;
+            // A death in a shared chase (night 8, the trail's end) restarts the chase for both instead.
+            if (Night8Sync.Instance != null && Night8Sync.Instance.TakeDeath()) return false;
+            if (TrailEndSync.Instance != null && TrailEndSync.Instance.TakeDeath()) return false;
             PersonalMoments.Instance.RespawnAlone();
             return false;
         }
@@ -123,7 +126,7 @@ namespace IronbarkCoop
         static readonly string[] Names = {
             "PerformJumpscareAtRun", "Seq8PerformJumpscareAtRun", "Seq8PerformJumpscareUnderBed", "Seq8PerformJumpscareAtRunCrowd",
             "BadGuyJumpscare", "CrowdJumpScare", "HuntTriggered", "HuntTriggeredNear", "HuntTriggeredFar", "HuntTriggeredCrouched",
-            "Seq8HuntTriggeredFar", "Seq8HuntTriggeredClose", "Seq8HuntTriggeredCrowd", "Seq8TriggerChase", "Seq8CultSeen",
+            "Seq8HuntTriggeredFar", "Seq8HuntTriggeredClose", "Seq8HuntTriggeredCrowd", "Seq8CultSeen",
             "WolfSoundAndLight", "DoorSlam" };
 
         static IEnumerable<MethodBase> TargetMethods()

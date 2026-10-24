@@ -173,7 +173,7 @@ namespace IronbarkCoop
         }
 
         // Floor between the bed and the door, where there is room to stand.
-        static Vector3 BesideTheBed(WatchTowerManager tower)
+        internal static Vector3 BesideTheBed(WatchTowerManager tower)
         {
             var bed = tower.bed.transform.position;
             var door = tower.door ? tower.door.transform.position : bed - tower.bed.transform.forward * 2f;

@@ -103,12 +103,21 @@ namespace IronbarkCoop
         float dreamGain = 1f, gain = 1f;
         readonly float baseVolume;
         public float Gain => gain;
+        // Off the map (the credits): the partner is simply heard, as on a call.
+        bool flat;
+        public void SetFlat(bool on)
+        {
+            if (on == flat) return;
+            flat = on;
+            if (!dream) source.spatialBlend = on ? 0f : 1f;
+        }
+
         public void SetDream(bool on, float hearing)
         {
             dreamGain = on ? Mathf.Clamp01(hearing) : 1f;
             if (on == dream) return;
             dream = on;
-            source.spatialBlend = on ? 0f : 1f;
+            source.spatialBlend = on || flat ? 0f : 1f;
             if (on && !reverb) reverb = emitter.AddComponent<AudioReverbFilter>();
             if (reverb) { reverb.reverbPreset = AudioReverbPreset.Psychotic; reverb.enabled = on; }
         }
@@ -122,7 +131,7 @@ namespace IronbarkCoop
             emitter.transform.position = headPosition;
             source.mute = !present;
             if (!present) { buffer.Clear(); return; }
-            if (!dream && Time.unscaledTime >= nextOcclusion)
+            if (!dream && !flat && Time.unscaledTime >= nextOcclusion)
             {
                 nextOcclusion = Time.unscaledTime + 0.1f;
                 var listener = Camera.main;
