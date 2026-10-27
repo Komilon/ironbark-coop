@@ -2,6 +2,20 @@
 
 Both players must use the same mod version. / У обоих игроков должна быть одна версия мода.
 
+## 0.12.6 — supper tray, porta-potty, night 8 restart / поднос, туалет, перезапуск ночи 8
+
+Protocol 16: works with 0.12.0–0.12.5, but both players should update. / Протокол 16: совместима с 0.12.0–0.12.5, но обновиться стоит обоим.
+
+**English**
+- The partner could take the tray from a player sitting and eating in bed, and that player's controls stayed stuck until a restart. While a player eats, the tray beside them cannot be picked up.
+- Porta-potty for two: when one player shuts the door, the other one inside is hidden too (dim door, light, the chase given up), and opening it on them brings them out of hiding the game's way.
+- Night 8: after a death both started over still "hiding in the porta-potty", and the wall at the stairs said to wait for the partner forever. The porta-potty is now reset with the rest of the night.
+
+**Русский**
+- Напарник мог забрать поднос у игрока, который сидит и ест в кровати, и управление у того зависало до перезапуска. Пока игрок ест, поднос рядом с ним взять нельзя.
+- Туалет на двоих: когда один закрывает дверь, второй внутри тоже прячется (затемнённая дверь, свет, погоня прекращается), а открытая дверь выводит его из укрытия как в игре.
+- Ночь 8: после смерти оба начинали заново всё ещё «спрятанными в туалете», и стена у лестницы бесконечно просила дождаться напарника. Теперь туалет сбрасывается вместе с остальной ночью.
+
 ## 0.12.5 — a frozen game no longer ends the session / зависание игры больше не рвёт сессию
 
 Protocol 16: works with 0.12.0–0.12.4, but both players should update. / Протокол 16: совместима с 0.12.0–0.12.4, но обновиться стоит обоим.

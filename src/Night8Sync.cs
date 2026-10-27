@@ -526,6 +526,7 @@ namespace IronbarkCoop
             SharedChase.Revive();
             var gm = Gm;
             if (tower.playerUnderBed) tower.playerUnderBed.SetActive(false);
+            OuthouseSync.Reset(tower.portaPotty);
             if (gm.uIManager && gm.uIManager.microphoneUI) gm.uIManager.microphoneUI.SetActive(false);
             // His hunt and chase, undone in this world.
             foreach (var flag in new[] { "seq8JumpscareChaseRealise", "seq8TriggerJumpScare", "seq8SeenUnderBed", "seq8JumpscareHaunting", "seq8JumpscareHaunting2", "seq8JumpscareChasing", "seq8WaitForFarScare", "seq8FarJumpscare", "seq8CloseJumpscare", "seq8LookAtCultist", "isStairsFootstepsPlaying", "seq8ShiftSubOn" })

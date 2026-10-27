@@ -23,7 +23,7 @@ namespace IronbarkCoop
             + "/mw" + (Tower && Tower.casseroleColliderInsideMicrowave ? (Tower.casseroleColliderInsideMicrowave.enabled ? "open" : "shut") + (Tower.seq6CasseroleInsideMicrowave ? "In" : "") + (Tower.seq6MicrowaveOn ? "On" : "") : "-")
             + "/stack" + (first && second && first.transform.parent == second.transform.parent && Tower && first.transform.parent == Tower.casseroleParentInsideFridge ? (second.transform.position.y - first.transform.position.y).ToString("F2", System.Globalization.CultureInfo.InvariantCulture) : "-");
 
-        public static void SceneLoaded() { KaylaStarted = false; PartnerAte = false; first = null; second = null; warmSent.Clear(); }
+        public static void SceneLoaded() { KaylaStarted = false; lockedTray = null; PartnerAte = false; first = null; second = null; warmSent.Clear(); }
 
         static WatchTowerManager Tower => GameManager.instance ? GameManager.instance.watchTowerManager : null;
         internal const string SecondKey = "Casserole:coop-second-portion", FirstKey = "Casserole:coop-first-portion";
@@ -34,6 +34,7 @@ namespace IronbarkCoop
             var tower = Tower;
             var pickup = GameManager.instance ? GameManager.instance.itemPickUp : null;
             if (!tower || !pickup || !second) return;
+            LockPartnersTray();
             Fridge(tower);
             Microwave(tower);
             // Not while the microwave runs here: the game warms whatever is "the dish" when its timer ends.
@@ -148,6 +149,30 @@ namespace IronbarkCoop
                     if (tray && tray.TryGetComponent<Casserole>(out var dish)) ShowLeft(dish, packet.arg);
                     break;
             }
+        }
+
+        // The game lets any tray be picked up while this player's own one may be (ItemPickUp checks only "the dish"), so
+        // the tray on the partner's lap could be taken from under them while they ate, and their controls stayed stuck on
+        // the bed (playtest). While the partner sits eating, the tray beside them cannot be clicked here.
+        static Casserole lockedTray;
+        static void LockPartnersTray()
+        {
+            var plugin = Plugin.Instance;
+            Casserole wanted = null;
+            if (plugin != null && plugin.PartnerSeat == "bed-eat")
+                foreach (var tray in new[] { first, second })
+                    if (tray && tray != Tower.casserole && tray.gameObject.activeInHierarchy && Vector3.Distance(tray.transform.position, plugin.PartnerPosition) < 2f) { wanted = tray; break; }
+            if (wanted == lockedTray) return;
+            if (lockedTray) SetClickable(lockedTray, true);
+            lockedTray = wanted;
+            if (wanted) SetClickable(wanted, false);
+            Plugin.Log("SUPPER_PARTNER_TRAY " + (wanted ? "locked" : "free"));
+        }
+
+        static void SetClickable(Casserole tray, bool on)
+        {
+            foreach (var collider in tray.GetComponentsInChildren<Collider>(true)) collider.enabled = on;
+            if (!on && tray.TryGetComponent<Rigidbody>(out var body)) body.isKinematic = true;
         }
 
         static void ShowLeft(Casserole dish, int eaten)

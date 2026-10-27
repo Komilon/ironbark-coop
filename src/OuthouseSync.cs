@@ -50,12 +50,28 @@ namespace IronbarkCoop
                 {
                     case "open":
                         if (Opened(potty)) break;
+                        if (potty.isPlayerInside)
+                        {
+                            // Opened on this player hiding inside: out of hiding, as when they open it themselves.
+                            potty.StartCoroutine(potty.waitRelease(false));
+                            potty.Open();
+                            break;
+                        }
                         potty.GetComponent<Animator>().Play("DoorOpenPortapotty");
                         Opened(potty) = true; LidOpened(potty) = false;
                         if (potty.doorAS && potty.openClip) potty.doorAS.PlayOneShot(potty.openClip);
                         break;
                     case "close":
                         if (!Opened(potty)) break;
+                        if (potty.isPlayerInside)
+                        {
+                            // Shut in by the partner: hidden too (the dim door, the light, the chase given up), as when
+                            // they shut it themselves. Before, only the one who clicked was hidden (playtest).
+                            potty.Close();
+                            potty.StartCoroutine(potty.waitRelease(true));
+                            potty.wait = true;
+                            break;
+                        }
                         potty.GetComponent<Animator>().Play("DoorClosePortapotty");
                         Opened(potty) = false; LidOpened(potty) = false;
                         if (potty.doorAS && potty.closeClip) potty.doorAS.PlayOneShot(potty.closeClip);
@@ -78,6 +94,25 @@ namespace IronbarkCoop
         }
 
         internal static bool IsOpen(PortaPotty potty) => potty && Opened(potty);
+
+        // Starting night 8 over after a death: nobody is in it any more and the door stands shut, as the night left it.
+        // A player who died in it stayed "hidden inside" and the partner was told to wait for them forever (playtest).
+        internal static void Reset(PortaPotty potty)
+        {
+            if (!potty) return;
+            potty.StopAllCoroutines();
+            if (Opened(potty)) potty.GetComponent<Animator>().Play("DoorClosePortapotty");
+            Opened(potty) = false; LidOpened(potty) = false;
+            potty.wait = false; potty.openable = true;
+            potty.isPlayerInside = false; potty.playerHiddenInside = false;
+            if (potty.doorRend && potty.opaqueOutMat && potty.opaqueInMat)
+            {
+                var materials = potty.doorRend.materials;
+                if (materials.Length > 1) { materials[0] = potty.opaqueOutMat; materials[1] = potty.opaqueInMat; potty.doorRend.materials = materials; }
+            }
+            if (potty.pottyLight) potty.pottyLight.SetActive(false);
+            if (potty.micUI) potty.micUI.SetActive(false);
+        }
     }
 
     [HarmonyPatch(typeof(PortaPotty), nameof(PortaPotty.Open))]
