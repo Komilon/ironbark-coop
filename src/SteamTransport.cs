@@ -182,7 +182,7 @@ namespace IronbarkCoop
                 while (Voice.Count >= 8) Voice.TryDequeue(out _);
                 Voice.Enqueue(json);
             }
-            else if (Incoming.Count >= 128) Drop("receive queue overflow");
+            else if (Incoming.Count >= 4096) Drop("receive queue overflow");
             else Incoming.Enqueue(json);
         }
 

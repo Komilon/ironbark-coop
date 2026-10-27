@@ -2,6 +2,16 @@
 
 Both players must use the same mod version. / У обоих игроков должна быть одна версия мода.
 
+## 0.12.5 — a frozen game no longer ends the session / зависание игры больше не рвёт сессию
+
+Protocol 16: works with 0.12.0–0.12.4, but both players should update. / Протокол 16: совместима с 0.12.0–0.12.4, но обновиться стоит обоим.
+
+**English**
+- When one player's game froze for a few seconds (logging in to the tower computer), the other side gave up after 5 seconds and both players dropped out of co-op. The mod now waits up to 30 seconds and the session carries on. Tested by freezing one game for 15 seconds: the players stayed connected.
+
+**Русский**
+- Если у одного игрока игра подвисала на несколько секунд (вход в компьютер на башне), другая сторона через 5 секунд обрывала связь и оба вылетали из коопа. Теперь мод ждёт до 30 секунд, и игра продолжается. Проверено заморозкой одной копии игры на 15 секунд: соединение сохранилось.
+
 ## 0.12.4 — voice no longer drops from the first night on / голос больше не пропадает с первой ночи
 
 Protocol 16: works with 0.12.0–0.12.3, but both players should update: the fix is on the speaking side. / Протокол 16: совместима с 0.12.0–0.12.3, но обновиться стоит обоим: исправление на стороне говорящего.

@@ -96,7 +96,9 @@ namespace IronbarkCoop
         {
             peer = client;
             client.NoDelay = true;
-            client.SendTimeout = 5000;
+            // A partner whose game freezes for a while (loading the tower computer's desktop after the password, playtest) stops
+            // reading; their socket buffer fills and writes block. Wait that out instead of dropping the session after 5 s.
+            client.SendTimeout = 30000;
             udpReady = false;
             lastPoseSeq = 0;
             connected = true;
@@ -152,7 +154,7 @@ namespace IronbarkCoop
                         EnqueueVoice(json);
                     else
                     {
-                        if (Incoming.Count >= 128) throw new IOException("Receive queue overflow");
+                        if (Incoming.Count >= 4096) throw new IOException("Receive queue overflow");
                         Incoming.Enqueue(json);
                     }
                 }
