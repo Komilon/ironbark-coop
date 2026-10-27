@@ -2,6 +2,16 @@
 
 Both players must use the same mod version. / У обоих игроков должна быть одна версия мода.
 
+## 0.12.3 — the installer no longer stops on a missing drive / установщик не падает на отсутствующем диске
+
+Protocol 16: works with 0.12.0–0.12.2. / Протокол 16: совместима с 0.12.0–0.12.2.
+
+**English**
+- `install.bat` crashed with "Cannot find drive" when Steam still listed a library on a disk that is no longer connected. Such libraries are now skipped and the search goes on.
+
+**Русский**
+- `install.bat` падал с ошибкой «Не удалось найти диск», если Steam помнил библиотеку на отключённом диске. Теперь такие библиотеки пропускаются, поиск игры продолжается.
+
 ## 0.12.2 — the install scripts in English / скрипты установки на английском
 
 Protocol 16: works with 0.12.0 and 0.12.1. / Протокол 16: совместима с 0.12.0 и 0.12.1.

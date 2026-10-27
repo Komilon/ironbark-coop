@@ -11,16 +11,17 @@ function Find-Game {
         $vdf = Join-Path $steam 'steamapps\libraryfolders.vdf'
         if (Test-Path $vdf) {
             foreach ($match in [regex]::Matches((Get-Content $vdf -Raw), '"path"\s+"([^"]+)"')) {
-                $candidates.Add((Join-Path ($match.Groups[1].Value -replace '\\\\', '\') 'steamapps\common\Fears to Fathom - Ironbark Lookout'))
+                $candidates.Add([IO.Path]::Combine(($match.Groups[1].Value -replace '\\\\', '\'), 'steamapps\common\Fears to Fathom - Ironbark Lookout'))
             }
         }
     }
     foreach ($drive in (Get-PSDrive -PSProvider FileSystem).Root) {
         foreach ($sub in 'Games\Fears to Fathom Ironbark Lookout', 'Games\Fears to Fathom - Ironbark Lookout', 'SteamLibrary\steamapps\common\Fears to Fathom - Ironbark Lookout') {
-            $candidates.Add((Join-Path $drive $sub))
+            $candidates.Add([IO.Path]::Combine($drive, $sub))
         }
     }
-    foreach ($path in $candidates) { if (Test-Path (Join-Path $path $exeName)) { return $path } }
+    # A library on a drive that is gone (a removed disk) must not stop the search.
+    foreach ($path in $candidates) { if (Test-Path -LiteralPath ([IO.Path]::Combine($path, $exeName))) { return $path } }
     return $null
 }
 

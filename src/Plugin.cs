@@ -103,7 +103,7 @@ namespace IronbarkCoop
         }
     }
 
-    [BepInPlugin("astra.ironbark.coop", "Ironbark Cooperative", "0.12.2")]
+    [BepInPlugin("astra.ironbark.coop", "Ironbark Cooperative", "0.12.3")]
     public sealed class Plugin : BaseUnityPlugin
     {
         internal static Plugin Instance;
