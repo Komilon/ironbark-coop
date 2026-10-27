@@ -2,6 +2,18 @@
 
 Both players must use the same mod version. / У обоих игроков должна быть одна версия мода.
 
+## 0.12.4 — voice no longer drops from the first night on / голос больше не пропадает с первой ночи
+
+Protocol 16: works with 0.12.0–0.12.3, but both players should update: the fix is on the speaking side. / Протокол 16: совместима с 0.12.0–0.12.3, но обновиться стоит обоим: исправление на стороне говорящего.
+
+**English**
+- From the first night on, the game turns on its own microphone for the shout meter and took the microphone away from the voice chat: the partner stopped hearing you, or heard your last phrase on repeat. While voice chat is on, the game's meter now reads the voice chat's microphone instead of opening its own.
+- If something else stops the recording, the voice chat now restarts the microphone instead of resending old audio.
+
+**Русский**
+- С первой ночи игра включает свой микрофон для индикатора крика и отбирала его у голосового чата: напарник переставал вас слышать или слышал вашу последнюю фразу по кругу. Теперь при включённом голосовом чате индикатор игры берёт громкость из микрофона чата и свой микрофон не открывает.
+- Если запись остановит что-то ещё, голосовой чат перезапустит микрофон, а не будет пересылать старый звук.
+
 ## 0.12.3 — the installer no longer stops on a missing drive / установщик не падает на отсутствующем диске
 
 Protocol 16: works with 0.12.0–0.12.2. / Протокол 16: совместима с 0.12.0–0.12.2.

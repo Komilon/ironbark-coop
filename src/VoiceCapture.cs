@@ -24,6 +24,8 @@ namespace IronbarkCoop
         public bool Recording => microphone != null;
         public bool Transmitting { get; private set; }
         public float Level { get; private set; }
+        // The loudest sample of the last frame, squared: what the game's own shout meter (micInput.MicLoudness) measures.
+        public float Peak { get; private set; }
         public string Error { get; private set; }
         public VoiceCapture(Plugin plugin) { this.plugin = plugin; }
         public void TestTone() { toneFrame = 100; nextTone = Time.unscaledTime; }
@@ -45,6 +47,9 @@ namespace IronbarkCoop
             }
             bool wanted = mode == VoiceMode.VoiceActivation || (mode == VoiceMode.PushToTalk && Input.GetKey(key));
             if (!wanted || plugin.Paused) { Stop(); return; }
+            // Something else ended the recording (another app, or the game restarting the device): start it again rather
+            // than read a clip that no longer fills, which resent its last second over and over.
+            if (microphone && !Microphone.IsRecording(device)) Stop();
             if (!microphone && !StartMicrophone(preferredDevice)) return;
             int position = Microphone.GetPosition(device);
             if (position < 0) return;
@@ -79,6 +84,9 @@ namespace IronbarkCoop
                 float energy = 0;
                 for (int i = 0; i < frame.Length; i++) energy += frame[i] * frame[i];
                 Level = Mathf.Sqrt(energy / frame.Length);
+                float peak = 0;
+                for (int i = 0; i < frame.Length; i++) peak = Mathf.Max(peak, frame[i] * frame[i]);
+                Peak = peak;
                 if (mode == VoiceMode.VoiceActivation)
                 {
                     // Opens on speech above the room's own noise (a slow floor that follows the quiet moments), stays open a
@@ -102,6 +110,7 @@ namespace IronbarkCoop
             microphone = Microphone.Start(device, true, 2, rate);
             if (!microphone) { Error = "Microphone start failed"; return false; }
             readPosition = 0; resamplePhase = 0; lastInput = 0; pending.Clear();
+            Plugin.Log("MIC_START " + device + " " + microphone.frequency + " Hz");
             Error = null;
             return true;
         }
@@ -159,6 +168,7 @@ namespace IronbarkCoop
         {
             if (!microphone) return;
             Microphone.End(device);
+            Peak = 0;
             UnityEngine.Object.Destroy(microphone);
             microphone = null;
             pending.Clear();

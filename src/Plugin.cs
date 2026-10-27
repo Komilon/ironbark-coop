@@ -103,7 +103,7 @@ namespace IronbarkCoop
         }
     }
 
-    [BepInPlugin("astra.ironbark.coop", "Ironbark Cooperative", "0.12.3")]
+    [BepInPlugin("astra.ironbark.coop", "Ironbark Cooperative", "0.12.4")]
     public sealed class Plugin : BaseUnityPlugin
     {
         internal static Plugin Instance;
@@ -143,6 +143,7 @@ namespace IronbarkCoop
         internal string HostAddress { get => address; set => address = value; }
         internal bool UsingSteam => transport is SteamTransport;
         internal bool SteamHostWithLobby => transport is SteamTransport s && s.IsHost && s.HasLobby;
+        internal VoiceCapture Capture => capture;
         internal bool LocalTalking => capture != null && capture.Transmitting;
         internal bool PartnerTalking => voice != null && voice.Speaking;
         internal string NetInfo => transport is DirectTransport d && authenticated ? (d.UdpActive ? "UDP" : "TCP") + (d.RttMs >= 0 ? " " + d.RttMs + " ms" : "") : "";
