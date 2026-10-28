@@ -1,4 +1,4 @@
-﻿param([string]$GamePath)
+﻿param([string]$GamePath, [switch]$Elevated)
 $ErrorActionPreference = 'Stop'
 $exeName = 'Fears to Fathom - Ironbark Lookout.exe'
 $package = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -32,6 +32,15 @@ if (!$GamePath -or !(Test-Path (Join-Path $GamePath $exeName))) {
 }
 if (!(Test-Path (Join-Path $GamePath $exeName))) { throw "Game executable not found: $GamePath" }
 $full = (Resolve-Path $GamePath).Path
+# A game under Program Files can only be changed as administrator: ask for it (the UAC prompt) and go on in that window.
+$probe = Join-Path $GamePath ('ironbark-coop-write-test-' + [guid]::NewGuid().ToString('N'))
+try { [IO.File]::WriteAllText($probe, ''); Remove-Item -LiteralPath $probe -Force }
+catch {
+    if ($Elevated) { throw "No write access to $GamePath even as administrator." }
+    Write-Host 'The game folder needs administrator rights. Confirm the Windows prompt to continue.' -ForegroundColor Yellow
+    Start-Process powershell -Verb RunAs -ArgumentList ('-NoExit -NoProfile -ExecutionPolicy Bypass -File "{0}" -GamePath "{1}" -Elevated' -f $PSCommandPath, $GamePath.TrimEnd('\'))
+    return
+}
 if (Get-Process -Name 'Fears to Fathom - Ironbark Lookout' -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path.StartsWith($full, [StringComparison]::OrdinalIgnoreCase) }) { throw 'Close the game first.' }
 
 Write-Host "Game folder: $GamePath"

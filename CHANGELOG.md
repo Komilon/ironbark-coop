@@ -2,6 +2,16 @@
 
 Both players must use the same mod version. / У обоих игроков должна быть одна версия мода.
 
+## 0.12.7 — installing into Program Files / установка в Program Files
+
+Protocol 16: works with 0.12.0–0.12.6. / Протокол 16: совместима с 0.12.0–0.12.6.
+
+**English**
+- A game installed under `C:\Program Files` stopped `install.bat` with "Access denied". The installer (and uninstaller) now asks for administrator rights through the Windows prompt and finishes in that window.
+
+**Русский**
+- Если игра стоит в `C:\Program Files`, `install.bat` падал с ошибкой «Отказано в доступе». Теперь установщик (и удаление) запрашивает права администратора через окно Windows и доделывает работу в новом окне.
+
 ## 0.12.6 — supper tray, porta-potty, night 8 restart / поднос, туалет, перезапуск ночи 8
 
 Protocol 16: works with 0.12.0–0.12.5, but both players should update. / Протокол 16: совместима с 0.12.0–0.12.5, но обновиться стоит обоим.
