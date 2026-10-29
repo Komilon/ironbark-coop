@@ -370,7 +370,6 @@ namespace IronbarkCoop
                     }
                 }
                 WatchSilence();
-                WatchCamera();
                 for (int i = 0; i < 64 && transport != null && transport.Incoming.TryDequeue(out var json); i++)
                 {
                     try { Receive(WireJson.Read(json)); }
@@ -1186,26 +1185,6 @@ namespace IronbarkCoop
                 Logger.LogInfo("PARTNER_BACK");
                 Notice(string.Format(ConnectionPanel.L("Связь с {0} восстановлена", "Connection to {0} restored"), partnerName), 3f);
             }
-        }
-
-        // Diagnostics for a playtest report not reproduced in the lab (the guest's view flew off while eating supper in
-        // bed): a camera that jumps more than 1.5 m in one frame outside a scene load is logged with what it hangs on.
-        Camera lastCamera;
-        Vector3 lastCameraAt;
-        int cameraJumps;
-        void WatchCamera()
-        {
-            var camera = Camera.main;
-            if (!authenticated || !camera) { lastCamera = null; return; }
-            var at = camera.transform.position;
-            if (camera == lastCamera && (at - lastCameraAt).sqrMagnitude > 1.5f * 1.5f && cameraJumps < 20)
-            {
-                cameraJumps++;
-                var tower = GameManager.instance ? GameManager.instance.watchTowerManager : null;
-                Logger.LogInfo("CAMERA_JUMP " + lastCameraAt.ToString("F2") + " -> " + at.ToString("F2") + " path=" + ItemSync.PathOf(camera.transform)
-                    + " state=" + (tower ? tower.state.ToString() : "-") + " held=" + Items.LocalHeld + " partnerSeat=" + (partnerSeat ?? "-"));
-            }
-            lastCamera = camera; lastCameraAt = at;
         }
 
         void DrawNotice()

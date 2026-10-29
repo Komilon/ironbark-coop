@@ -10,13 +10,11 @@ Protocol 16: works with 0.12.0–0.12.7, but both players should update. / Пр�
 - The morning coffee photo soft-locked in the viewfinder when the game is installed under Program Files: the game first creates a "Screenshots" folder next to its exe (which it never uses) and that fails there. The photo is now taken anyway. (Lab: a blocked folder, the photo is saved.)
 - Diner: the guest's seat across the table drifted with each sit-down (a little further, then out of the window). The seat no longer depends on where the player last looked.
 - When the partner stops answering (their game froze, a network hiccup), a notice says the connection is being waited for, then that it is back; a lost connection is reported too, with how to reconnect. Before, the partner silently vanished. (Lab: one game frozen, both notices shown.)
-- Diagnostics: a sudden camera jump is written to the log (for the reported "flying off while eating supper in bed", not reproduced yet).
 
 **Русский**
 - Фото за утренним кофе зависало в видоискателе, если игра стоит в Program Files: игра сначала создаёт рядом с exe папку «Screenshots» (которая ей не нужна), а там это запрещено. Теперь снимок делается всё равно. (Лаборатория: папка заблокирована, фото сохранилось.)
 - Закусочная: место гостя напротив съезжало с каждым разом (чуть дальше, потом за окно). Теперь место не зависит от того, куда игрок смотрел в прошлый раз.
 - Если напарник перестал отвечать (зависла игра, сбой сети), появляется надпись, что связь ждём, а потом, что она восстановлена; о потере связи тоже сообщается, с подсказкой, как подключиться снова. Раньше напарник просто молча пропадал. (Лаборатория: одна игра заморожена, обе надписи появились.)
-- Диагностика: резкий скачок камеры записывается в лог (для «улетания» во время ужина в кровати, пока не воспроизведено).
 
 ## 0.12.7 — installing into Program Files / установка в Program Files
 
