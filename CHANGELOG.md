@@ -2,6 +2,18 @@
 
 Both players must use the same mod version. / У обоих игроков должна быть одна версия мода.
 
+## 0.12.9 — your name in the lobby, joined/left notices / ник в лобби, сообщения о входе и выходе
+
+Protocol 16: works with 0.12.0–0.12.8. / Протокол 16: совместима с 0.12.0–0.12.8.
+
+**English**
+- The lobby has a **Your name** field on the host line while you are not connected. Leave it empty to use your Steam name (shown as a hint). The name is saved and shown to your partner above your character and in the lobby.
+- In the main menu a notice shows when a player joins or leaves the lobby. The mod's notices (joined, left, connection waiting/restored/lost) now use the game menu's typeface.
+
+**Русский**
+- В лобби появилось поле **«Ваш ник»** в строке хоста, пока вы не подключены. Если оставить его пустым, используется имя из Steam (оно показано подсказкой). Ник сохраняется, напарник видит его над вашим персонажем и в лобби.
+- В главном меню появляется сообщение, когда игрок присоединился к лобби или вышел из него. Все сообщения мода (вход, выход, ожидание, восстановление и потеря связи) теперь написаны шрифтом меню игры.
+
 ## 0.12.8 — coffee photo in Program Files, diner seats, connection notices / фото в Program Files, места в закусочной, сообщения о связи
 
 Protocol 16: works with 0.12.0–0.12.7, but both players should update. / Протокол 16: совместима с 0.12.0–0.12.7, но обновиться стоит обоим.

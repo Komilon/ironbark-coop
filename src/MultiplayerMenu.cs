@@ -13,6 +13,7 @@ namespace IronbarkCoop
     // disconnect). Everything reuses the menu's own fonts, hover markers and slide animation.
     internal static class MultiplayerMenu
     {
+        internal static Font MenuFont;
         static RectTransform panel;
         static Vector2 hiddenPosition;
         static readonly AccessTools.FieldRef<UIManagerMainMenu, Vector2> ButtonsHome = AccessTools.FieldRefAccess<UIManagerMainMenu, Vector2>("mmButtonsPaneliPos");
@@ -36,6 +37,9 @@ namespace IronbarkCoop
             var saved = menu.savedPanel;
             var itemTemplate = buttons.Find("Credits");
             if (!itemTemplate) { Plugin.Log("MENU_INSTALL_FAILED no Credits item"); return; }
+            // The menu's own typeface, kept for the mod's notices (joined / left / connection) everywhere.
+            var itemText = itemTemplate.GetComponentInChildren<Text>(true);
+            if (itemText && itemText.font) MenuFont = itemText.font;
 
             // Main menu: "Multiplayer" right under "Episodes"; the items below move down one row.
             float row = 30.75f;
@@ -167,7 +171,8 @@ namespace IronbarkCoop
         bool previewOpen;
         int lookIndex;
         Transform back;
-        InputField ip;
+        InputField ip, nick;
+        RectTransform nickRow;
         float talkPulse;
         static string L(string ru, string en) => ConnectionPanel.L(ru, en);
 
@@ -181,6 +186,10 @@ namespace IronbarkCoop
             partnerSlot = Label("partner slot", x, top - 47f, 15, FontStyle.Normal, 300f);
             hostSlot.horizontalOverflow = partnerSlot.horizontalOverflow = HorizontalWrapMode.Overflow;
             status = Label("status", x, top - 76f, 11, FontStyle.Normal, 270f, 34f);
+            // The player's name, typed on the host line while not connected (the Steam name is the default).
+            nickRow = Field("name field", x, top - 26f, 82f, 150f, "", "", 24, out nick);
+            nick.text = Plugin.Instance ? Plugin.Instance.NameSetting : "";
+            nick.onEndEdit.AddListener(value => { if (Plugin.Instance) Plugin.Instance.NameSetting = value; });
             float bx = big.GetComponent<RectTransform>().anchoredPosition.x, y = top - 122f;
             hostButton = MultiplayerMenu.Clone(big, transform, "host", "Создать игру", "Host game", () => Plugin.Instance?.HostDirect());
             hostButton.anchoredPosition = new Vector2(bx, y); y -= 31f;
@@ -269,12 +278,21 @@ namespace IronbarkCoop
 
         RectTransform IpField(float x, float y)
         {
-            var row = new GameObject("ip field", typeof(RectTransform)).GetComponent<RectTransform>();
+            var row = Field("ip field", x, y, 10f, 200f, "Код друга или его IP", "Friend's code or IP", 64, out ip);
+            ip.text = Plugin.Instance ? Plugin.Instance.HostAddress : "";
+            ip.onValueChanged.AddListener(value => { if (Plugin.Instance) Plugin.Instance.HostAddress = value.Trim(); });
+            return row;
+        }
+
+        // A text field in the menu's font: a faint line, the typed text, a hint while empty.
+        RectTransform Field(string name, float x, float y, float indent, float width, string hintRussian, string hintEnglish, int limit, out InputField field)
+        {
+            var row = new GameObject(name, typeof(RectTransform)).GetComponent<RectTransform>();
             row.SetParent(transform, false);
             row.anchorMin = row.anchorMax = title.rectTransform.anchorMin;
             row.pivot = new Vector2(0.5f, 0.5f);
-            row.sizeDelta = new Vector2(200f, 22f);
-            row.anchoredPosition = new Vector2(x + (200f - title.rectTransform.sizeDelta.x) / 2f + 10f, y);
+            row.sizeDelta = new Vector2(width, 22f);
+            row.anchoredPosition = new Vector2(x + (width - title.rectTransform.sizeDelta.x) / 2f + indent, y);
             var line = row.gameObject.AddComponent<Image>();
             line.color = new Color(1f, 1f, 1f, 0.08f);
             var text = Instantiate(title.gameObject, row).GetComponent<Text>();
@@ -286,16 +304,17 @@ namespace IronbarkCoop
             tr.anchorMin = Vector2.zero; tr.anchorMax = Vector2.one; tr.offsetMin = new Vector2(6f, 0f); tr.offsetMax = new Vector2(-6f, 0f);
             var hint = Instantiate(text.gameObject, row).GetComponent<Text>();
             hint.name = "Placeholder";
-            hint.text = L("Код друга или его IP", "Friend's code or IP");
-            var hintLive = hint.gameObject.AddComponent<TwoLanguages>();
-            hintLive.Russian = "Код друга или его IP"; hintLive.English = "Friend's code or IP";
+            hint.text = L(hintRussian, hintEnglish);
+            if (hintRussian != "")
+            {
+                var hintLive = hint.gameObject.AddComponent<TwoLanguages>();
+                hintLive.Russian = hintRussian; hintLive.English = hintEnglish;
+            }
             hint.color = new Color(1f, 1f, 1f, 0.35f);
-            ip = row.gameObject.AddComponent<InputField>();
-            ip.textComponent = text;
-            ip.placeholder = hint;
-            ip.characterLimit = 64;
-            ip.text = Plugin.Instance ? Plugin.Instance.HostAddress : "";
-            ip.onValueChanged.AddListener(value => { if (Plugin.Instance) Plugin.Instance.HostAddress = value.Trim(); });
+            field = row.gameObject.AddComponent<InputField>();
+            field.textComponent = text;
+            field.placeholder = hint;
+            field.characterLimit = limit;
             return row;
         }
 
@@ -328,7 +347,7 @@ namespace IronbarkCoop
             preview.gameObject.SetActive(previewOpen);
             if (back) back.gameObject.SetActive(!previewOpen);
             if (!previewOpen) return false;
-            foreach (var control in new Component[] { hostSlot, partnerSlot, status, addresses, hostButton, joinButton, ipRow, steamButton, inviteButton, playButton, leaveButton, copyButton, upnpButton, characterButton, lookButton, micButton })
+            foreach (var control in new Component[] { hostSlot, partnerSlot, status, addresses, nickRow, hostButton, joinButton, ipRow, steamButton, inviteButton, playButton, leaveButton, copyButton, upnpButton, characterButton, lookButton, micButton })
                 control.gameObject.SetActive(false);
             var looks = ScRuntime.Available();
             var look = looks.Count > 0 ? looks[lookIndex % looks.Count] : null;
@@ -359,6 +378,13 @@ namespace IronbarkCoop
             status.text = plugin.Online ? ConnectionPanel.Explain(plugin.Status)
                 : L("Создайте игру или подключитесь к другу.", "Host a game or join a friend.");
             bool idle = !plugin.Online;
+            // Not connected: the host line is where the name is typed (empty: the Steam name, shown as the hint).
+            nickRow.gameObject.SetActive(idle);
+            if (idle)
+            {
+                hostSlot.text = L("Ваш ник:", "Your name:");
+                if (nick.placeholder is Text auto) auto.text = plugin.AutoName;
+            }
             hostButton.gameObject.SetActive(idle);
             joinButton.gameObject.SetActive(idle);
             ipRow.gameObject.SetActive(idle);

@@ -103,7 +103,7 @@ namespace IronbarkCoop
         }
     }
 
-    [BepInPlugin("astra.ironbark.coop", "Ironbark Cooperative", "0.12.8")]
+    [BepInPlugin("astra.ironbark.coop", "Ironbark Cooperative", "0.12.9")]
     public sealed class Plugin : BaseUnityPlugin
     {
         internal static Plugin Instance;
@@ -159,6 +159,13 @@ namespace IronbarkCoop
             voiceMode = (VoiceMode)(((int)voiceMode + 1) % 3);
             Config.Bind("Voice", "Input", VoiceMode.VoiceActivation).Value = voiceMode;
         }
+        // The name typed in the lobby (empty: the Steam name). Saved to the config like the other lobby settings.
+        internal string NameSetting
+        {
+            get => playerName ?? "";
+            set { playerName = (value ?? "").Trim(); if (playerName.Length > 24) playerName = playerName.Substring(0, 24); Config.Bind("Session", "PlayerName", "").Value = playerName; }
+        }
+        internal string AutoName => !string.IsNullOrEmpty(SteamTransport.LocalName) ? SteamTransport.LocalName : Environment.UserName;
         internal bool UpnpEnabled { get => upnpEnabled; set { upnpEnabled = value; Config.Bind("Network", "UPnP", false).Value = value; } }
         internal string UpnpState => upnp.State;
         // The code a host gives to a friend: router's external address when UPnP opened the port, else the best local one.
@@ -364,7 +371,9 @@ namespace IronbarkCoop
                     }
                     else if (message.StartsWith("Disconnected"))
                     {
-                        if (authenticated) Notice(string.Format(ConnectionPanel.L("Связь с {0} потеряна. Чтобы играть дальше, подключитесь заново в меню «Мультиплеер».", "Lost the connection to {0}. To keep playing, connect again from the Multiplayer menu."), partnerName), 12f);
+                        // In the lobby a partner who leaves has simply left; in a chapter the session is lost.
+                        if (authenticated && SceneManager.GetActiveScene().name == "Main Menu") Notice(string.Format(ConnectionPanel.L("Игрок {0} вышел из лобби", "{0} left the lobby"), partnerName), 5f);
+                        else if (authenticated) Notice(string.Format(ConnectionPanel.L("Связь с {0} потеряна. Чтобы играть дальше, подключитесь заново в меню «Мультиплеер».", "Lost the connection to {0}. To keep playing, connect again from the Multiplayer menu."), partnerName), 12f);
                         silent = false;
                         authenticated = false; if (avatar != null) avatar.Active = false; PartnerLeft();
                     }
@@ -495,6 +504,7 @@ namespace IronbarkCoop
                 {
                     Disconnect(); status = "Version, game build or session code mismatch"; return;
                 }
+                if (!authenticated) Notice(string.Format(ConnectionPanel.L("Игрок {0} присоединился к лобби", "{0} joined the lobby"), string.IsNullOrWhiteSpace(p.name) ? "Partner" : p.name.Trim()), 5f);
                 authenticated = true; status = "Partner connected";
                 partnerCharacter = p.character == "marcus" || p.character == "tessa" ? p.character : (host ? "tessa" : "marcus");
                 partnerLook = p.look;
@@ -1191,12 +1201,17 @@ namespace IronbarkCoop
         {
             var text = NoticeText;
             if (text == null) return;
-            if (noticeStyle == null) noticeStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, wordWrap = true, fontSize = Mathf.Max(14, Screen.height / 40) };
-            var rect = new Rect(Screen.width * 0.15f, Screen.height * 0.06f, Screen.width * 0.7f, Screen.height * 0.1f);
-            noticeStyle.normal.textColor = new Color(0f, 0f, 0f, 0.8f);
-            GUI.Label(new Rect(rect.x + 2, rect.y + 2, rect.width, rect.height), text, noticeStyle);
-            noticeStyle.normal.textColor = new Color(1f, 0.92f, 0.75f, 1f);
-            GUI.Label(rect, text, noticeStyle);
+            if (noticeStyle == null) noticeStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, wordWrap = true, fontStyle = FontStyle.Bold };
+            // In the main menu's typeface and look: white bold letters with the menu's red/cyan fringe and a soft shadow.
+            if (MultiplayerMenu.MenuFont) noticeStyle.font = MultiplayerMenu.MenuFont;
+            noticeStyle.fontSize = Mathf.Max(14, Screen.height / 30);
+            var rect = new Rect(Screen.width * 0.1f, Screen.height * 0.05f, Screen.width * 0.8f, Screen.height * 0.1f);
+            void Draw(float dx, float dy, Color color) { noticeStyle.normal.textColor = color; GUI.Label(new Rect(rect.x + dx, rect.y + dy, rect.width, rect.height), text, noticeStyle); }
+            float px = Mathf.Max(1f, Screen.height / 540f);
+            Draw(2f * px, 2f * px, new Color(0f, 0f, 0f, 0.75f));
+            Draw(-1.5f * px, 0f, new Color(1f, 0.15f, 0.35f, 0.55f));
+            Draw(1.5f * px, 0f, new Color(0.2f, 0.85f, 1f, 0.45f));
+            Draw(0f, 0f, new Color(1f, 1f, 1f, 0.95f));
         }
         void OnGUI()
         {
