@@ -20,4 +20,23 @@ namespace IronbarkCoop
             return false;
         }
     }
+
+    // Taking the coffee photo first creates a "Screenshots" folder next to the game's exe (never used: the photo goes to
+    // the profile folder). With the game under Program Files that throws, so the photo is never taken and the camera
+    // view stays stuck (playtest: the host's game in Program Files (x86)). The same steps, minus the folder.
+    [HarmonyPatch(typeof(PictureMode), "TakeScreenshot")]
+    internal static class PhotoFolderPatch
+    {
+        static readonly System.Reflection.MethodInfo Capture = AccessTools.Method(typeof(PictureMode), "CaptureScreenAndSave");
+
+        static bool Prefix(PictureMode __instance)
+        {
+            try { Directory.CreateDirectory(__instance.screenshotDirectory); }
+            catch (System.Exception ex) { Plugin.Log("PHOTO_FOLDER_SKIPPED " + ex.GetType().Name); }
+            string filename = Application.persistentDataPath + "/screenshot" + __instance.ssNumber + ".png";
+            __instance.ssNumber++;
+            __instance.StartCoroutine((System.Collections.IEnumerator)Capture.Invoke(__instance, new object[] { filename }));
+            return false;
+        }
+    }
 }

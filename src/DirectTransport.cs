@@ -44,6 +44,10 @@ namespace IronbarkCoop
         public string TakePose() => Interlocked.Exchange(ref latestPose, null);
         public string TakeWorld() => Interlocked.Exchange(ref latestWorld, null);
         public void Pump() { }
+        // Anything from the partner (a TCP frame or a UDP datagram, keep-alives included) counts as heard.
+        int lastHeard;
+        public int SilentMs => connected ? Environment.TickCount - Volatile.Read(ref lastHeard) : 0;
+        static readonly byte[] KeepAlive = Encoding.UTF8.GetBytes("{\"kind\":\"net-ping\"}");
 
         public void Host(int port)
         {
@@ -101,6 +105,7 @@ namespace IronbarkCoop
             client.SendTimeout = 30000;
             udpReady = false;
             lastPoseSeq = 0;
+            Volatile.Write(ref lastHeard, Environment.TickCount);
             connected = true;
             Events.Enqueue("Connected");
             if (isHost)
@@ -140,7 +145,9 @@ namespace IronbarkCoop
                     if (size < 1 || size > 65536) throw new IOException("Invalid frame size");
                     var body = new byte[size];
                     ReadExactly(stream, body);
+                    Volatile.Write(ref lastHeard, Environment.TickCount);
                     string json = Encoding.UTF8.GetString(body);
+                    if (json == "{\"kind\":\"net-ping\"}") continue;
                     if (json.StartsWith("{\"kind\":\"udp-token\",", StringComparison.Ordinal))
                     {
                         int start = json.IndexOf("\"code\":\"", StringComparison.Ordinal) + 8;
@@ -182,6 +189,8 @@ namespace IronbarkCoop
             while (!stopped && connected && ReferenceEquals(peer, client))
             {
                 if (!isHost && !udpReady && token != 0 && udpRemote != null) SendDatagram(TypeHello, new byte[0], false);
+                // Without UDP pings the partner could otherwise go quiet (a loading screen) and look lost.
+                if (!udpReady) { outgoing.Enqueue(KeepAlive); signal.Set(); }
                 if (udpReady)
                 {
                     SendDatagram(TypePing, BitConverter.GetBytes(DateTime.UtcNow.Ticks), false);
@@ -216,6 +225,7 @@ namespace IronbarkCoop
                 // Only the registered peer endpoint may feed game data.
                 if (udpRemote == null || !from.Equals(udpRemote)) continue;
                 Interlocked.Exchange(ref lastUdpReceive, Environment.TickCount);
+                Volatile.Write(ref lastHeard, Environment.TickCount);
                 Interlocked.Increment(ref UdpReceived);
                 if (!udpReady && (type == TypeAck || type == TypeHello || type == TypePose || type == TypeVoice || type == TypePing))
                 {

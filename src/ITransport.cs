@@ -15,6 +15,8 @@ namespace IronbarkCoop
         void Send(string value);
         // Called every frame on Unity's main thread (Steam reads packets here; TCP uses its own threads).
         void Pump();
+        // Milliseconds since anything (data or a keep-alive) last came from the partner; 0 while not connected.
+        int SilentMs { get; }
     }
 
     internal static class PacketKinds

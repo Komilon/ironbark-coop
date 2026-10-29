@@ -304,6 +304,7 @@ namespace IronbarkCoop
                 + " voiceGain=" + plugin.VoiceGain.ToString("F2", CultureInfo.InvariantCulture) + " voiceFilter=" + plugin.VoiceFilter + " partnerDreaming=" + plugin.PartnerDreaming;
             s += " dream=" + plugin.Dream.Debug + " sleep=" + plugin.Sleep.Debug + " bedHalf=" + plugin.Beds.Shifted + " partnerLying=" + plugin.PartnerLying + " partnerTorch=" + plugin.PartnerTorch + " heldTorchScale=" + plugin.Hands.HeldTorchScale;
             if (Camera.main) s += " camEuler=" + Camera.main.transform.localEulerAngles.ToString("F0").Replace(" ", "");
+            if (Camera.main) s += " camPos=" + Camera.main.transform.position.ToString("F2").Replace(" ", "");
             s += " calls=" + RemoteCalls.Sent + "/" + RemoteCalls.Applied + " musicFixes=" + plugin.Music.Corrections + " lead=" + plugin.IsStoryLead;
             return s;
         }

@@ -103,7 +103,7 @@ namespace IronbarkCoop
         }
     }
 
-    [BepInPlugin("astra.ironbark.coop", "Ironbark Cooperative", "0.12.7")]
+    [BepInPlugin("astra.ironbark.coop", "Ironbark Cooperative", "0.12.8")]
     public sealed class Plugin : BaseUnityPlugin
     {
         internal static Plugin Instance;
@@ -362,8 +362,15 @@ namespace IronbarkCoop
                         authenticated = false;
                         Send(new Packet { kind = "hello", code = code, build = build, name = LocalName, character = MyCharacter, look = LookSetting });
                     }
-                    else if (message.StartsWith("Disconnected")) { authenticated = false; if (avatar != null) avatar.Active = false; PartnerLeft(); }
+                    else if (message.StartsWith("Disconnected"))
+                    {
+                        if (authenticated) Notice(string.Format(ConnectionPanel.L("Связь с {0} потеряна. Чтобы играть дальше, подключитесь заново в меню «Мультиплеер».", "Lost the connection to {0}. To keep playing, connect again from the Multiplayer menu."), partnerName), 12f);
+                        silent = false;
+                        authenticated = false; if (avatar != null) avatar.Active = false; PartnerLeft();
+                    }
                 }
+                WatchSilence();
+                WatchCamera();
                 for (int i = 0; i < 64 && transport != null && transport.Incoming.TryDequeue(out var json); i++)
                 {
                     try { Receive(WireJson.Read(json)); }
@@ -1150,10 +1157,73 @@ namespace IronbarkCoop
         }
 
         // While the microphone sends, a small mark in the corner (the F8 panel that showed it is gone).
-        GUIStyle talkStyle;
+        GUIStyle talkStyle, noticeStyle;
+
+        // A partner who goes quiet (their game frozen, a network hiccup) is not shown as simply vanished: the players
+        // are told the connection is being waited for, then that it is back or lost (playtest: people thought they had
+        // spawned apart or been dropped).
+        string notice;
+        float noticeUntil;
+        bool silent;
+        const int SilentAfterMs = 5000;
+        void Notice(string text, float seconds) { notice = text; noticeUntil = Time.unscaledTime + seconds; Logger.LogInfo("NOTICE " + text); }
+        internal string NoticeText => Time.unscaledTime < noticeUntil ? notice : null;
+
+        void WatchSilence()
+        {
+            if (!authenticated || transport == null) { silent = false; return; }
+            int ms = transport.SilentMs;
+            if (ms > SilentAfterMs)
+            {
+                if (!silent) Logger.LogInfo("PARTNER_SILENT");
+                silent = true;
+                notice = string.Format(ConnectionPanel.L("Нет связи с {0}… ждём ({1} с)", "No connection to {0}... waiting ({1} s)"), partnerName, ms / 1000);
+                noticeUntil = Time.unscaledTime + 0.5f;
+            }
+            else if (silent)
+            {
+                silent = false;
+                Logger.LogInfo("PARTNER_BACK");
+                Notice(string.Format(ConnectionPanel.L("Связь с {0} восстановлена", "Connection to {0} restored"), partnerName), 3f);
+            }
+        }
+
+        // Diagnostics for a playtest report not reproduced in the lab (the guest's view flew off while eating supper in
+        // bed): a camera that jumps more than 1.5 m in one frame outside a scene load is logged with what it hangs on.
+        Camera lastCamera;
+        Vector3 lastCameraAt;
+        int cameraJumps;
+        void WatchCamera()
+        {
+            var camera = Camera.main;
+            if (!authenticated || !camera) { lastCamera = null; return; }
+            var at = camera.transform.position;
+            if (camera == lastCamera && (at - lastCameraAt).sqrMagnitude > 1.5f * 1.5f && cameraJumps < 20)
+            {
+                cameraJumps++;
+                var tower = GameManager.instance ? GameManager.instance.watchTowerManager : null;
+                Logger.LogInfo("CAMERA_JUMP " + lastCameraAt.ToString("F2") + " -> " + at.ToString("F2") + " path=" + ItemSync.PathOf(camera.transform)
+                    + " state=" + (tower ? tower.state.ToString() : "-") + " held=" + Items.LocalHeld + " partnerSeat=" + (partnerSeat ?? "-"));
+            }
+            lastCamera = camera; lastCameraAt = at;
+        }
+
+        void DrawNotice()
+        {
+            var text = NoticeText;
+            if (text == null) return;
+            if (noticeStyle == null) noticeStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, wordWrap = true, fontSize = Mathf.Max(14, Screen.height / 40) };
+            var rect = new Rect(Screen.width * 0.15f, Screen.height * 0.06f, Screen.width * 0.7f, Screen.height * 0.1f);
+            noticeStyle.normal.textColor = new Color(0f, 0f, 0f, 0.8f);
+            GUI.Label(new Rect(rect.x + 2, rect.y + 2, rect.width, rect.height), text, noticeStyle);
+            noticeStyle.normal.textColor = new Color(1f, 0.92f, 0.75f, 1f);
+            GUI.Label(rect, text, noticeStyle);
+        }
         void OnGUI()
         {
-            if (!authenticated || capture == null || Event.current.type != EventType.Repaint) return;
+            if (Event.current.type != EventType.Repaint) return;
+            DrawNotice();
+            if (!authenticated || capture == null) return;
             string text = capture.Error ?? (capture.Transmitting ? "((•))" : null);
             if (text == null) return;
             if (talkStyle == null) talkStyle = new GUIStyle(GUI.skin.label) { fontSize = Mathf.Max(12, Screen.height / 54), normal = { textColor = new Color(1f, 1f, 1f, 0.55f) } };

@@ -146,10 +146,13 @@ namespace IronbarkCoop
             Events.Enqueue("Disconnected: " + reason);
         }
 
+        public int SilentMs => connected ? (int)((Time.unscaledTime - lastReceive) * 1000f) : 0;
+
         public void Pump()
         {
             if (disposed) return;
-            if (connected && Time.unscaledTime - lastReceive > 15f) Drop("timed out");
+            // As the direct connection: a partner's game frozen for a while (loading, the tower computer) is waited out.
+            if (connected && Time.unscaledTime - lastReceive > 30f) Drop("timed out");
             for (int channel = 0; channel <= VoiceChannel; channel++)
             {
                 for (int i = 0; i < 256 && SteamNetworking.IsP2PPacketAvailable(channel); i++)

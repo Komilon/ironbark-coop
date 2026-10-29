@@ -186,7 +186,13 @@ namespace IronbarkCoop
 
         // The booth camera rig: SeatEye/SeatYaw use the rig's resting pose, not where the player is looking.
         internal static Vector3 SeatEye(DinerBooth booth) => booth.camera ? booth.camera.transform.position : booth.playerInSeat.transform.position;
-        internal static float SeatYaw(DinerBooth booth) => booth.playerInSeat.transform.eulerAngles.y;
+        internal static float SeatYaw(DinerBooth booth)
+        {
+            // Facing the table (the rig's own yaw follows the mouse and is kept between sit-downs).
+            var toTable = booth.seatCollider ? booth.seatCollider.transform.position - booth.playerInSeat.transform.position : Vector3.zero;
+            toTable.y = 0f;
+            return toTable.sqrMagnitude > 0.01f ? Quaternion.LookRotation(toTable).eulerAngles.y : booth.playerInSeat.transform.eulerAngles.y;
+        }
 
         public void Tick()
         {
@@ -532,10 +538,15 @@ namespace IronbarkCoop
         internal static Vector3 TableCenter(DinerBooth booth)
         {
             var rig = booth.playerInSeat.transform.position;
-            var forward = booth.playerInSeat.transform.forward; forward.y = 0f; forward.Normalize();
-            var table = booth.seatCollider ? booth.seatCollider.transform.position : rig + forward * 0.98f;
-            float along = Mathf.Clamp(Vector3.Dot(table - rig, forward), 0.6f, 1.2f);
-            return rig + forward * along;
+            // Toward the table's click collider, not the rig's forward: the seat camera turns the rig with the mouse and
+            // keeps that yaw, so a second sit-down took a turned forward and mirrored the seat off the bench, a third one
+            // out of the window (playtest video).
+            var toTable = booth.seatCollider ? booth.seatCollider.transform.position - rig : booth.playerInSeat.transform.forward;
+            toTable.y = 0f;
+            if (toTable.sqrMagnitude < 0.0001f) toTable = Vector3.forward;
+            float along = Mathf.Clamp(toTable.magnitude, 0.6f, 1.2f);
+            if (!booth.seatCollider) along = 0.98f;
+            return rig + toTable.normalized * along;
         }
     }
 
